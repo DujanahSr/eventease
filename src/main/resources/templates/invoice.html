@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ticket | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0b0616">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/kikk-style.css}">
+    <style>
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            padding-top: 50px;
+            padding-bottom: 50px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .ticket-wrapper {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .ticket-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+            position: relative;
+        }
+        /* Holographic accent */
+        .ticket-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--kikk-yellow), #fff, var(--kikk-yellow));
+            z-index: 10;
+        }
+        .ticket-header {
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        .ticket-header::after, .ticket-header::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            width: 30px;
+            height: 30px;
+            background-color: var(--bg-dark);
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+        }
+        .ticket-header::before {
+            left: -16px;
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            transform: rotate(-45deg);
+        }
+        .ticket-header::after {
+            right: -16px;
+            border-left-color: transparent;
+            border-bottom-color: transparent;
+            transform: rotate(45deg);
+        }
+        .ticket-body {
+            padding: 40px;
+            position: relative;
+        }
+        .qr-code-container {
+            text-align: center;
+            border-left: 1px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .qr-code {
+            max-width: 180px;
+            border: 10px solid #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(255,215,0,0.2);
+        }
+        .ticket-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 5px;
+        }
+        .ticket-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: #fff;
+            font-weight: 700;
+        }
+        
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-family: 'Playfair Display', serif;
+            font-size: 8rem;
+            color: rgba(255,255,255,0.02);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @media (max-width: 768px) {
+            .qr-code-container {
+                border-left: none;
+                border-top: 1px dashed rgba(255, 255, 255, 0.2);
+                padding-top: 30px;
+                margin-top: 20px;
+            }
+            .ticket-header::after, .ticket-header::before {
+                display: none;
+            }
+        }
+        
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 767.98px) {
+            .qr-code-container {
+                border-left: none !important;
+                border-top: 1px dashed rgba(255, 255, 255, 0.2);
+            }
+            .no-print.d-flex {
+                flex-direction: column;
+                padding: 0 20px;
+            }
+            .no-print.d-flex .btn-kikk, 
+            .no-print.d-flex .btn-kikk-outline {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
+            .ticket-card {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                background: #fff !important;
+            }
+            .ticket-card::before, .watermark {
+                display: none !important;
+            }
+            .ticket-header {
+                background: #f8f9fa !important;
+                border-bottom: 2px dashed #000 !important;
+            }
+            .qr-code-container {
+                border-left: 2px dashed #000 !important;
+            }
+            .ticket-label {
+                color: #666 !important;
+            }
+            .ticket-value {
+                color: #000 !important;
+            }
+            .btn, .no-print {
+                display: none !important;
+            }
+            .kikk-title {
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container ticket-wrapper kikk-animate fade-in-only">
+        <div class="ticket-card row g-0">
+            <div class="watermark">EVTEASE</div>
+            <div class="col-md-8 position-relative z-1">
+                <div class="ticket-header">
+                    <div style="font-size: 12px; letter-spacing: 3px; color: var(--kikk-yellow); margin-bottom: 10px;">OFFICIAL E-TICKET</div>
+                    <h2 class="mb-0 text-uppercase kikk-title" style="font-size: clamp(2rem, 4vw, 2.5rem);" th:text="${booking.ticketCategory.event.name}">Event Name</h2>
+                </div>
+                <div class="ticket-body">
+                    <div class="row mb-4">
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <div class="ticket-label">Nama Pemesan</div>
+                            <div class="ticket-value" th:text="${booking.user.name}">User Name</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="ticket-label">Booking ID</div>
+                            <div class="ticket-value" style="font-size: 1.1rem; font-family: 'Inter', monospace; color: var(--kikk-yellow);" th:text="${booking.id}">12345</div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <div class="ticket-label">Tanggal Acara</div>
+                            <div class="ticket-value" th:text="${booking.eventDate}">Date</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="ticket-label">Kategori Tiket</div>
+                            <div class="ticket-value" th:text="${booking.ticketCategory.name}">VIP</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <div class="ticket-label">Jumlah Orang</div>
+                            <div class="ticket-value" th:text="${booking.participants}">2</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="ticket-label">Status</div>
+                            <div>
+                                <span class="badge" style="background-color: var(--kikk-yellow); color: #000; padding: 6px 12px; font-weight: 600; letter-spacing: 1px;" th:text="${booking.status}">PAID</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 qr-code-container py-4 position-relative z-1">
+                <div class="text-center w-100 px-4">
+                    <img class="qr-code mb-4" th:src="'data:image/png;base64,' + ${qrCode}" alt="QR Code" />
+                    <p style="color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.5; margin: 0;">Tunjukkan QR Code ini kepada panitia saat registrasi di lokasi acara.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5 no-print d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            <button class="btn-kikk" onclick="window.print()"><i class="fas fa-print"></i> Cetak / Simpan PDF</button>
+            <a href="/bookings/booking-list" class="btn-kikk-outline"><i class="fas fa-arrow-left"></i> Kembali</a>
+        </div>
+    </div>
+</body>
+</html>

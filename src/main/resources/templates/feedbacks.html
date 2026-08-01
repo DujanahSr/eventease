@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Ulasan Saya | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#FFD700">
+    <!-- Bootstrap 5 & FontAwesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/css/kikk-style.css}">
+    <style>
+        .page-header {
+            background: linear-gradient(180deg, rgba(255,215,0,0.02) 0%, transparent 100%);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 40px 0;
+            margin-bottom: 40px;
+        }
+        
+        .kikk-review-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .kikk-review-card:hover {
+            border-color: var(--glass-hover-border);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .review-card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .review-card-body {
+            padding: 25px;
+            flex: 1;
+        }
+        
+        .event-badge {
+            color: var(--kikk-yellow);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .star-rating {
+            color: var(--kikk-yellow);
+            font-size: 12px;
+        }
+        
+        .review-text {
+            color: rgba(255,255,255,0.8);
+            line-height: 1.6;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--glass-border);
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+    <!-- Navbar Premium -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">Eventease</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="/events">Cari Acara</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                    <li class="nav-item ms-lg-3">
+                        <a class="btn-kikk-outline btn-sm px-4 py-2" href="/bookings/booking-list">Tiket Saya</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Header -->
+    <div class="page-header">
+        <div class="container kikk-animate fade-in-only">
+            <div style="font-size: 12px; letter-spacing: 2px; color: var(--kikk-yellow); margin-bottom: 10px; font-weight: 600;">FEEDBACK HISTORY</div>
+            <h1 class="kikk-title" style="font-size: clamp(2.5rem, 5vw, 4rem);">Riwayat Ulasan Saya</h1>
+            <p style="color: rgba(255,255,255,0.6);">Daftar semua penilaian yang pernah Anda berikan untuk acara Eventease.</p>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container pb-5 flex-grow-1">
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show border-0 rounded-3" role="alert" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid #10b981 !important;">
+            <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show border-0 rounded-3" role="alert" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid #ef4444 !important;">
+            <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-5 kikk-animate stagger-1">
+            <h5 style="font-weight: 600; color: #fff; margin-bottom: 0;">Ulasan Anda (<span th:text="${#lists.size(feedbacks)}" style="color: var(--kikk-yellow);">0</span>)</h5>
+            <a href="/bookings/booking-list" class="btn-kikk-outline px-4">
+                <i class="fas fa-plus me-1"></i> Beri Ulasan Baru
+            </a>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Jika tidak ada ulasan -->
+            <div class="col-12 kikk-animate stagger-2" th:if="${feedbacks.isEmpty()}">
+                <div class="empty-state">
+                    <i class="fas fa-comment-dots mb-4" style="font-size: 4rem; color: rgba(255,255,255,0.1);"></i>
+                    <h4 class="kikk-title mb-3" style="font-size: 2rem;">Belum Ada Ulasan</h4>
+                    <p style="color: rgba(255,255,255,0.5);">Anda belum pernah memberikan ulasan untuk acara apapun. <br>Beri ulasan dari daftar Tiket Saya setelah mengikuti acara.</p>
+                    <a href="/bookings/booking-list" class="btn-kikk mt-3 d-inline-flex">Pergi ke Tiket Saya</a>
+                </div>
+            </div>
+            
+            <!-- Loop Ulasan -->
+            <div class="col-md-6 kikk-animate stagger-2" th:each="feedback : ${feedbacks}">
+                <div class="kikk-review-card">
+                    <div class="review-card-header">
+                        <span class="event-badge"><i class="fas fa-ticket-alt me-1"></i> <span th:text="${feedback.event.name}">Nama Acara</span></span>
+                        <div class="star-rating">
+                            <i class="fas fa-star" th:each="i : ${#numbers.sequence(1, 5)}" 
+                               th:classappend="${i <= feedback.rating ? '' : 'text-muted opacity-25'}"></i>
+                        </div>
+                    </div>
+                    <div class="review-card-body">
+                        <p class="review-text" th:text="${'&quot;' + feedback.comment + '&quot;'}">"Komentarnya disini..."</p>
+                        
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                            <a th:href="@{/feedbacks/edit/{id}(id=${feedback.id})}" class="btn-kikk-outline px-3 py-2" style="font-size: 12px; border-color: rgba(255,255,255,0.3); color: #fff !important;">
+                                <i class="fas fa-edit me-1"></i> Edit
+                            </a>
+                            <a th:href="@{/feedbacks/delete/{id}(id=${feedback.id})}" class="btn-kikk-danger px-3 py-2" style="font-size: 12px;"
+                               onclick="confirmAction(event, this.href, 'Apakah Anda yakin ingin menghapus ulasan ini?');">
+                                <i class="fas fa-trash-alt me-1"></i> Hapus
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Premium Server-side Pagination -->
+        <div th:if="${feedbackPage.totalPages > 1}" class="d-flex justify-content-center mt-5">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item" th:classappend="${feedbackPage.first} ? 'disabled'">
+                        <a class="page-link" th:href="@{/feedbacks(page=${feedbackPage.number - 1})}" style="background: transparent; border-color: var(--glass-border); color: #fff;">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, feedbackPage.totalPages - 1)}"
+                        th:classappend="${feedbackPage.number == i} ? 'active'">
+                        <a class="page-link" th:href="@{/feedbacks(page=${i})}" th:text="${i + 1}"
+                           th:style="${feedbackPage.number == i} ? 'background-color: var(--kikk-yellow); border-color: var(--kikk-yellow); color: #000;' : 'background: transparent; border-color: var(--glass-border); color: #fff;'">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${feedbackPage.last} ? 'disabled'">
+                        <a class="page-link" th:href="@{/feedbacks(page=${feedbackPage.number + 1})}" style="background: transparent; border-color: var(--glass-border); color: #fff;">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Footer KIKK Style -->
+    <footer class="footer-kikk mt-auto">
+        <div class="container fade-in-only">
+            <h2 class="kikk-title footer-title" style="font-size: 2rem;">EVENT TICKET</h2>
+            <div class="footer-bottom mt-4">
+                <div>
+                    <span style="color: var(--kikk-yellow); margin-right: 15px;"><i class="fas fa-ticket-alt"></i> Eventease</span>
+                </div>
+                <div>
+                    &copy;2026 Eventease ASBL.
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmAction(e, url, message) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Konfirmasi Tindakan',
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                background: '#111827',
+                color: '#fff',
+                confirmButtonText: '<i class="fas fa-check"></i> Ya, Lanjutkan!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Harap tunggu sebentar.',
+                        allowOutsideClick: false,
+                        background: '#111827',
+                        color: '#fff',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    window.location.href = url;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

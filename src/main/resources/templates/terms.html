@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syarat dan Ketentuan | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .doc-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #ff7e5f 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .doc-content {
+            background: white;
+            border-radius: 12px;
+            padding: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            margin-top: -40px;
+            margin-bottom: 50px;
+        }
+        h2 {
+            color: #1e0a3c;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        p, li {
+            color: #555;
+            line-height: 1.8;
+        }
+        .last-updated {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <div class="container">
+            <h1 class="fw-bold display-5">Syarat dan Ketentuan</h1>
+            <p class="fs-5 opacity-75">Peraturan penggunaan layanan platform Eventease.</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="doc-content">
+            <div class="last-updated">Terakhir Diperbarui: 29 Juli 2026</div>
+            <h2>1. Penerimaan Syarat</h2>
+            <p>Selamat datang di Eventease. Dengan mengakses, mendaftar, atau menggunakan platform kami, Anda secara otomatis menyetujui seluruh Syarat dan Ketentuan ini. Jika Anda tidak setuju dengan ketentuan mana pun, harap jangan gunakan platform kami.</p>
+            <h2>2. Peran Pengguna</h2>
+            <p>Platform Eventease memiliki dua jenis pengguna:</p>
+            <ul>
+                <li><strong>Pembeli (User):</strong> Pengguna yang mencari, memesan, dan membeli tiket acara.</li>
+                <li><strong>Penyelenggara (Admin/Organizer):</strong> Pengguna yang membuat, mempublikasikan, dan mengelola acara serta penjualan tiket.</li>
+            </ul>
+            <h2>3. Pembelian dan Pengembalian Tiket (Refund)</h2>
+            <p>Seluruh transaksi tiket yang telah berstatus <strong>LUNAS (PAID)</strong> bersifat mutlak dan final. Eventease tidak menyediakan fitur pengembalian dana (refund) untuk alasan pribadi pembeli (seperti sakit, berubah pikiran, atau terlambat). Refund hanya akan diproses dalam kondisi:</p>
+            <ul>
+                <li>Acara dibatalkan sepenuhnya oleh Penyelenggara.</li>
+                <li>Terdapat instruksi khusus dari Penyelenggara mengenai perubahan jadwal yang tidak disetujui pembeli.</li>
+                <li>Proses pengembalian dana akan memakan waktu hingga 14 hari kerja.</li>
+            </ul>
+            <h2>4. Kewajiban Penyelenggara</h2>
+            <p>Penyelenggara wajib memberikan informasi acara yang jujur, akurat, dan tidak melanggar hukum yang berlaku di Indonesia. Penyelenggara bertanggung jawab penuh atas pelaksanaan acara, keselamatan pengunjung, dan pengelolaan tiket di lokasi acara. Eventease hanya bertindak sebagai perantara penyedia platform tiket.</p>
+            <h2>5. Kebijakan Anti-Penipuan (Scalping)</h2>
+            <p>Penjualan kembali tiket di atas harga resmi (Scalping/Calo) sangat dilarang. Eventease berhak membatalkan E-Ticket tanpa pengembalian dana jika tiket terbukti diperjualbelikan kembali secara ilegal.</p>
+            <h2>6. Perubahan Syarat dan Ketentuan</h2>
+            <p>Eventease berhak untuk mengubah, menambah, atau mengurangi Syarat dan Ketentuan ini kapan saja tanpa pemberitahuan sebelumnya. Pengguna disarankan untuk membaca halaman ini secara berkala.</p>
+            <div class="text-center mt-5">
+                <button onclick="window.close()" class="btn btn-primary px-5 py-2 fw-bold">Saya Mengerti & Tutup Halaman</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

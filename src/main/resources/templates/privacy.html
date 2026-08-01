@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebijakan Privasi | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .doc-header {
+            background: linear-gradient(135deg, #1e0a3c 0%, #3a1575 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .doc-content {
+            background: white;
+            border-radius: 12px;
+            padding: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            margin-top: -40px;
+            margin-bottom: 50px;
+        }
+        h2 {
+            color: #1e0a3c;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        p, li {
+            color: #555;
+            line-height: 1.8;
+        }
+        .last-updated {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .highlight-box {
+            background: #e6f7ff;
+            border-left: 4px solid #0096ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #005f9e;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <div class="container">
+            <h1 class="fw-bold display-5">Kebijakan Privasi</h1>
+            <p class="fs-5 opacity-75">Bagaimana kami melindungi dan mengelola data pribadi Anda.</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="doc-content">
+            <div class="last-updated">Terakhir Diperbarui: 29 Juli 2026</div>
+            <div class="highlight-box">
+                <i class="fas fa-shield-alt me-2"></i> Keamanan dan privasi data Anda adalah prioritas utama bagi Eventease. Kami berkomitmen untuk melindungi informasi Anda sesuai dengan hukum yang berlaku.
+            </div>
+            <h2>1. Data yang Kami Kumpulkan</h2>
+            <p>Saat mendaftar dan menggunakan Eventease, kami mengumpulkan beberapa data penting, antara lain:</p>
+            <ul>
+                <li><strong>Informasi Profil:</strong> Nama lengkap, alamat email, dan nomor telepon.</li>
+                <li><strong>Data Transaksi:</strong> Riwayat pemesanan tiket, acara yang diikuti, dan status pembayaran (namun kami <strong>tidak</strong> menyimpan informasi kartu kredit Anda, seluruhnya diproses dengan aman melalui gerbang pembayaran Midtrans).</li>
+                <li><strong>Data Perangkat & Log:</strong> Alamat IP, jenis browser, dan waktu akses untuk keperluan keamanan.</li>
+            </ul>
+            <h2>2. Penggunaan Data Pribadi</h2>
+            <p>Informasi yang kami kumpulkan hanya akan digunakan untuk tujuan:</p>
+            <ul>
+                <li>Memproses pendaftaran akun dan verifikasi pengguna.</li>
+                <li>Menerbitkan dan mengirimkan E-Ticket berserta QR Code ke email Anda.</li>
+                <li>Memberikan daftar hadir (guest list) kepada Penyelenggara acara (hanya nama dan kategori tiket) untuk keperluan proses check-in.</li>
+                <li>Menghubungi Anda terkait pengumuman acara, perubahan jadwal, atau pembatalan.</li>
+            </ul>
+            <h2>3. Pembagian Data (Data Sharing)</h2>
+            <p>Kami tidak akan pernah menjual atau menyewakan data Anda kepada pihak ketiga. Namun, data spesifik (seperti nama Anda) akan dibagikan kepada <strong>Penyelenggara Acara</strong> yang acaranya Anda hadiri murni untuk kelancaran operasional di lokasi (misal: verifikasi identitas pintu masuk).</p>
+            <h2>4. Keamanan Penyimpanan Data</h2>
+            <p>Sandi (password) yang Anda buat akan dienkripsi menggunakan teknologi <em>BCrypt Hashing</em>. Bahkan staf atau teknisi dari Eventease tidak dapat mengetahui atau membaca kata sandi asli Anda.</p>
+            <h2>5. Hak Pengguna (Penghapusan Akun)</h2>
+            <p>Anda berhak untuk meminta penghapusan akun Anda beserta seluruh rekam jejak pribadi di sistem kami. Anda dapat mengajukan permohonan ini melalui kontak dukungan pelanggan kami.</p>
+            <div class="text-center mt-5">
+                <button onclick="window.close()" class="btn btn-primary px-5 py-2 fw-bold">Saya Mengerti & Tutup Halaman</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

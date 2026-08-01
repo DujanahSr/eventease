@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Tiket | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#110b29">
+    <!-- Bootstrap 5 & FontAwesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/kikk-style.css}">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Full Background Image with Gradient Overlay */
+        .page-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('/images/organizer_bg.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: -2;
+        }
+        .page-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(11, 6, 22, 0.85) 0%, rgba(11, 6, 22, 0.6) 100%);
+            z-index: -1;
+        }
+
+        /* Main Content Area */
+        
+        
+        .scanner-card {
+            background: rgba(15, 10, 30, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            max-width: 650px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        /* Scanner Container Styles */
+        #reader {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,215,0,0.3);
+            background: #000;
+        }
+        
+        /* Override HTML5-QRCode default styles */
+        #reader__dashboard_section_csr span {
+            color: #fff !important;
+        }
+        #reader button {
+            background: var(--kikk-yellow) !important;
+            color: #000 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: bold !important;
+            margin: 10px 5px !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+        }
+        #reader button:hover {
+            background: #fff !important;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5) !important;
+        }
+        #reader select {
+            background: rgba(255,255,255,0.1) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            border-radius: 8px !important;
+            padding: 8px !important;
+            margin-bottom: 10px !important;
+        }
+        #reader__dashboard_section_swaplink {
+            color: var(--kikk-yellow) !important;
+            text-decoration: none !important;
+        }
+        
+        /* Input Group */
+        .input-group {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .input-group-text {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--kikk-yellow);
+        }
+        .form-control {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 12px 20px;
+        }
+        .form-control:focus {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--kikk-yellow);
+            color: #fff;
+            box-shadow: none;
+        }
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        
+        /* Results Box Customization */
+        .alert-info { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; }
+        .alert-success { background: rgba(16, 185, 129, 0.1) !important; border: 1px solid rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
+        .alert-danger { background: rgba(239, 68, 68, 0.1) !important; border: 1px solid rgba(239, 68, 68, 0.3) !important; color: #ef4444 !important; }
+        .alert-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; }
+        
+        .result-details {
+            background: rgba(0,0,0,0.3) !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
+            color: #fff !important;
+        }
+        .result-details p {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        .result-details strong {
+            color: #fff !important;
+        }
+    
+        @media (max-width: 767.98px) {
+            .scanner-card { padding: 20px !important; }
+            #reader button { margin: 5px !important; width: 100% !important; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="page-overlay"></div>
+
+    
+    
+
+    
+    <!-- Sidebar -->
+    
+    <!-- Mobile Header (Visible only on small screens) -->
+    <div class="mobile-header d-lg-none">
+        <h2 class="mobile-brand">Eventease.</h2>
+        <button class="sidebar-toggler" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Floating Sidebar -->
+<div class="sidebar">
+        <div class="brand kikk-title text-lowercase">
+            Eventease.
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="fas fa-chart-pie"></i> Analitik Dasbor</a></li>
+            <li><a href="/organizer/events"><i class="fas fa-calendar-alt"></i> Kelola Acara</a></li>
+            <li><a href="/bookings" ><i class="fas fa-shopping-cart"></i> Data Penjualan</a></li>
+            <li><a href="/organizer/wallet" ><i class="fas fa-wallet"></i> Dompet Saldo</a></li>
+            <li><a href="/feedbacks/all-user" ><i class="fas fa-comments"></i> Ulasan Pengguna</a></li>
+            <li><a href="/organizer/scan" class="active"><i class="fas fa-qrcode"></i> Scan Tiket</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/logout-user" class="btn btn-logout w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                <i class="fas fa-sign-out-alt"></i> Keluar
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-5">
+            <div>
+                <div style="font-size: 12px; letter-spacing: 2px; color: var(--kikk-yellow); margin-bottom: 5px; font-weight: 600;">VALIDASI KEHADIRAN</div>
+                <h4 class="mb-0 fw-bold kikk-title text-uppercase" style="font-size: 2rem;">Pintu Masuk (Scanner)</h4>
+            </div>
+            <div>
+                <span class="badge p-3 px-4 fs-6 rounded-pill" style="background: rgba(255,215,0,0.1); color: var(--kikk-yellow); border: 1px solid rgba(255,215,0,0.3);"><i class="fas fa-user-tie me-2"></i>Penyelenggara</span>
+            </div>
+        </div>
+        
+        <div class="scanner-card">
+            <div class="text-center mb-4">
+                <h5 class="fw-bold" style="color: var(--kikk-yellow);"><i class="fas fa-camera me-2"></i> Arahkan Kamera ke QR Code</h5>
+                <p class="small" style="color: rgba(255,255,255,0.6);">Sistem akan otomatis mendeteksi dan memvalidasi tiket peserta Anda.</p>
+            </div>
+            <div id="reader"></div>
+            <div class="mt-5">
+                <div class="d-flex align-items-center mb-3">
+                    <hr class="flex-grow-1" style="border-color: rgba(255,255,255,0.1);">
+                    <span class="px-3 small" style="color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px;">Atau masukkan manual</span>
+                    <hr class="flex-grow-1" style="border-color: rgba(255,255,255,0.1);">
+                </div>
+                
+                <div class="input-group">
+                    <span class="input-group-text border-end-0"><i class="fas fa-keyboard"></i></span>
+                    <input type="text" id="manual-booking-id" class="form-control border-start-0" placeholder="Contoh ID Booking: 42a7a663...">
+                    <button class="btn-kikk px-4 fw-bold m-0" id="btn-manual-check" style="border-radius: 0 12px 12px 0;">Validasi</button>
+                </div>
+            </div>
+            <div id="result-box" class="alert mt-4 text-center d-none rounded-4 border-0 shadow-sm" role="alert"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+        const resultBox = document.getElementById("result-box");
+        let isScanning = true;
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            if(!isScanning) return;
+            isScanning = false; // Pause scanning while processing
+            // Tampilkan pesan proses
+            resultBox.className = "alert alert-info mt-4 text-center rounded-4 border-0 shadow-sm";
+            resultBox.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Memproses tiket...";
+            resultBox.classList.remove('d-none');
+            fetch('/organizer/api/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ bookingId: decodedText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultBox.className = "alert alert-success mt-4 text-center rounded-4 shadow-sm p-4";
+                    resultBox.innerHTML = `
+                        <h4 class="mb-3 fw-bold" style="color: #10b981;"><i class="fas fa-check-circle me-2"></i>${data.message}</h4>
+                        <div class="text-start p-4 rounded-4 mt-3 result-details">
+                            <p class="mb-2"><i class="fas fa-calendar-alt text-warning me-2" style="width: 20px;"></i> <strong style="font-size: 1.1rem;">${data.eventName}</strong></p>
+                            <p class="mb-2"><i class="fas fa-ticket-alt text-warning me-2" style="width: 20px;"></i> ${data.ticketType}</p>
+                            <p class="mb-2"><i class="fas fa-users text-warning me-2" style="width: 20px;"></i> ${data.participants} Orang</p>
+                            <p class="mb-0"><i class="fas fa-user text-warning me-2" style="width: 20px;"></i> ${data.buyerName}</p>
+                        </div>
+                    `;
+                } else {
+                    resultBox.className = "alert alert-danger mt-4 text-center rounded-4 shadow-sm p-4";
+                    resultBox.innerHTML = `<h4 class="fw-bold" style="color: #ef4444;"><i class="fas fa-times-circle me-2"></i>Akses Ditolak</h4><p class="mb-0 mt-2 text-white">${data.message}</p>`;
+                }
+                // Lanjut scan setelah 4 detik
+                setTimeout(() => {
+                    isScanning = true;
+                    resultBox.classList.add('d-none');
+                }, 4000);
+            })
+            .catch(error => {
+                resultBox.className = "alert alert-danger mt-4 text-center rounded-4 shadow-sm p-4";
+                resultBox.innerHTML = `<h4 style="color: #ef4444;"><i class="fas fa-exclamation-triangle me-2"></i>Kesalahan Sistem</h4><p class="mb-0 mt-2 text-white">Tidak dapat menghubungi server.</p>`;
+                setTimeout(() => { isScanning = true; resultBox.classList.add('d-none'); }, 3000);
+            });
+        };
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        // Meminta akses kamera dan mulai memindai
+        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+        .catch(err => {
+            resultBox.className = "alert alert-warning mt-4 text-center rounded-4 shadow-sm p-4";
+            resultBox.innerHTML = "<i class='fas fa-camera-slash me-2'></i> Tidak dapat mengakses kamera. Harap izinkan akses kamera pada browser Anda.";
+            resultBox.classList.remove('d-none');
+        });
+        // Event listener untuk tombol input manual
+        document.getElementById('btn-manual-check').addEventListener('click', () => {
+            const manualId = document.getElementById('manual-booking-id').value.trim();
+            if(manualId) {
+                qrCodeSuccessCallback(manualId, null);
+            }
+        });
+    </script>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persetujuan Pencairan Dana | Eventease Admin</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#110b29">
+    <!-- Bootstrap 5 & FontAwesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/kikk-style.css}">
+    
+    <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+</head>
+<body>
+    
+    <!-- Mobile Header (Visible only on small screens) -->
+    <div class="mobile-header d-lg-none">
+        <h2 class="mobile-brand" style="color: #38bdf8;">Command Center</h2>
+        <button class="sidebar-toggler" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar Admin -->
+<div class="sidebar">
+        <div class="brand kikk-title text-lowercase">
+            Eventease.
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="fas fa-users-cog"></i> Kelola Pengguna</a></li>
+            <li><a href="/categories"><i class="fas fa-tags"></i> Kategori Acara</a></li>
+            <li><a href="/admin/withdrawals" class="active"><i class="fas fa-hand-holding-usd"></i> Pencairan Dana</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/logout-user" class="btn w-100 d-flex align-items-center justify-content-center gap-2" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 16px; padding: 12px;">
+                <i class="fas fa-sign-out-alt"></i> Keluar
+            </a>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="topbar d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 text-center text-md-start">
+            <div>
+                <h4 class="mb-0 fw-bold kikk-title text-uppercase" style="font-size: 1.5rem;">Persetujuan Pencairan Dana</h4>
+                <small style="color: rgba(255,255,255,0.5);">Kelola permintaan penarikan saldo oleh Penyelenggara</small>
+            </div>
+            <div>
+                <span class="badge" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 8px 15px; font-size: 0.85rem;"><i class="fas fa-crown me-2"></i>SUPERUSER</span>
+            </div>
+        </div>
+        
+        <div th:if="${message != null}" class="alert alert-success alert-dismissible fade show rounded-4" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981;">
+            <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error != null}" class="alert alert-danger alert-dismissible fade show rounded-4" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #ef4444;">
+            <i class="fas fa-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div class="table-container">
+            <h5 class="fw-bold mb-4" style="color: var(--admin-primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;"><i class="fas fa-list-alt me-2"></i>Daftar Permintaan Penarikan (Payout)</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Penyelenggara</th>
+                            <th>Nominal</th>
+                            <th>Info Rekening</th>
+                            <th>Status</th>
+                            <th class="text-nowrap">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="wd : ${withdrawals}">
+                            <td th:text="${#temporals.format(wd.requestDate, 'dd MMM yyyy HH:mm')}">Date</td>
+                            <td>
+                                <strong th:text="${wd.organizer.name}" style="color: #fff;">Nama</strong><br>
+                                <small style="color: rgba(255,255,255,0.5);" th:text="${wd.organizer.email}">email</small>
+                            </td>
+                            <td class="fw-bold" style="color: #10b981;" th:text="${'Rp ' + #numbers.formatDecimal(wd.amount, 0, 'COMMA', 0, 'POINT')}">Rp 0</td>
+                            <td>
+                                <strong th:text="${wd.bankName}" style="color: #fff;">Bank</strong><br>
+                                <small th:text="${wd.accountNumber}" style="color: rgba(255,255,255,0.8);">12345</small><br>
+                                <small style="color: rgba(255,255,255,0.5);" th:text="${wd.accountName}">Nama A/N</small>
+                            </td>
+                            <td>
+                                <span th:if="${wd.status.name() == 'PENDING'}" class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2);">PENDING</span>
+                                <span th:if="${wd.status.name() == 'APPROVED'}" class="badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2);">APPROVED</span>
+                                <span th:if="${wd.status.name() == 'REJECTED'}" class="badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2);">REJECTED</span>
+                            </td>
+                            <td>
+                                <div th:if="${wd.status.name() == 'PENDING'}" class="d-flex gap-2">
+                                    <a th:href="@{/admin/withdrawals/approve/{id}(id=${wd.id})}" class="btn-action-sm success" onclick="confirmAction(event, this.href, 'Apakah Anda sudah mentransfer uangnya dan ingin menyetujui penarikan ini?')">
+                                        <i class="fas fa-check"></i> Setujui
+                                    </a>
+                                    <a th:href="@{/admin/withdrawals/reject/{id}(id=${wd.id})}" class="btn-action-sm danger" onclick="confirmAction(event, this.href, 'Tolak penarikan ini?')">
+                                        <i class="fas fa-times"></i> Tolak
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(withdrawals)}">
+                            <td colspan="6" class="text-center py-5" style="color: rgba(255,255,255,0.4);">
+                                <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                Belum ada permintaan penarikan data.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div th:if="${withdrawalPage.totalPages > 1}" class="d-flex justify-content-center mt-4">
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${withdrawalPage.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/withdrawals(page=${withdrawalPage.number - 1})}"><i class="fas fa-chevron-left"></i></a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, withdrawalPage.totalPages - 1)}" th:classappend="${withdrawalPage.number == i} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/withdrawals(page=${i})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${withdrawalPage.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/withdrawals(page=${withdrawalPage.number + 1})}"><i class="fas fa-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmAction(e, url, message) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Konfirmasi Tindakan',
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#334155',
+                confirmButtonText: '<i class="fas fa-check"></i> Ya, Lanjutkan!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Harap tunggu sebentar.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    window.location.href = url;
+                }
+            });
+        }
+    </script>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+        }
+    </script>
+</body>
+</html>

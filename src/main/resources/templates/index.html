@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventease - Premium Ticketing Platform</title>
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/kikk-style.css}">
+    <style>
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding-top: 80px;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('/images/kikk_hero_stage.jpg') no-repeat center center/cover;
+            z-index: -2;
+            transform: scale(1.05);
+            animation: kenburns 20s ease-out infinite alternate;
+        }
+        .hero-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(11,6,22,0.4) 0%, rgba(11,6,22,0.8) 70%, var(--bg-dark) 100%);
+            z-index: -1;
+        }
+        
+        @keyframes kenburns {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* 3D Floating Elements */
+        .floating-element {
+            position: absolute;
+            z-index: 0;
+            opacity: 0.8;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+        .float-1 { top: 15%; left: 5%; width: 300px; animation: floatY 8s ease-in-out infinite; }
+        .float-2 { bottom: 20%; right: 5%; width: 250px; animation: floatY 10s ease-in-out infinite reverse; }
+        
+        @keyframes floatY {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 900px;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            font-weight: 300;
+            margin-bottom: 50px;
+            color: rgba(255,255,255,0.7);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Search Bar Glassmorphism */
+        .search-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 10px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .search-glass:focus-within {
+            border-color: rgba(255,215,0,0.3);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), 0 0 20px rgba(255,215,0,0.1);
+        }
+        .search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px 25px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+        .search-input:focus {
+            outline: none;
+        }
+        .search-divider {
+            width: 1px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 10px;
+        }
+        .search-category {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px 20px;
+            cursor: pointer;
+            min-width: 180px;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23F0C808%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 12px;
+        }
+        .search-category option {
+            background: var(--bg-dark);
+            color: #fff;
+        }
+        .search-category:focus {
+            outline: none;
+        }
+        .btn-search {
+            background: var(--kikk-yellow);
+            border: none;
+            color: #000;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+        .btn-search:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(255,215,0,0.3);
+        }
+
+        /* Event Grid Adjustments */
+        .event-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .event-card-img {
+            height: 220px;
+            object-fit: cover;
+            width: 100%;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .event-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            color: var(--kikk-yellow);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255,215,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .event-date {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--kikk-yellow);
+            color: #000;
+            padding: 10px 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 800;
+            line-height: 1;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        
+        /* Pagination Premium */
+        .pagination-premium .page-link {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            margin: 0 5px;
+            border-radius: 12px !important;
+            transition: all 0.3s;
+        }
+        .pagination-premium .page-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--kikk-yellow);
+        }
+        .pagination-premium .page-item.active .page-link {
+            background: var(--kikk-yellow);
+            color: #000;
+            border-color: var(--kikk-yellow);
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+        .pagination-premium .page-item.disabled .page-link {
+            background: transparent;
+            color: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.05);
+        }
+    
+        /* Mobile Responsiveness */
+        @media (max-width: 767.98px) {
+            .search-glass {
+                flex-direction: column;
+                border-radius: 20px;
+                padding: 15px;
+            }
+            .search-input, .search-category, .btn-search {
+                width: 100%;
+                margin-bottom: 10px;
+                border-radius: 10px !important;
+            }
+            .search-divider {
+                width: 100%;
+                height: 1px;
+                margin: 10px 0;
+            }
+            .btn-search {
+                margin-bottom: 0;
+                border-radius: 15px !important;
+            }
+            .hero-section {
+                padding-top: 100px;
+            }
+            .navbar-custom .navbar-collapse {
+                background: rgba(11, 6, 22, 0.95);
+                border-radius: 15px;
+                padding: 15px;
+                margin-top: 10px;
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar Premium -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand kikk-title text-lowercase" href="/" style="font-size: 1.8rem; letter-spacing: 1px;">Eventease.</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link active" href="/">Beranda</a></li>
+                    
+                    <!-- Tampil untuk semua: Katalog Acara (untuk tamu dan user) -->
+                    <li class="nav-item" th:if="${loggedInUser == null or loggedInUser.role.roleName == 'USER'}">
+                        <a class="nav-link" href="/events">Katalog Acara</a>
+                    </li>
+                    <!-- Organizer: Katalog Acara → kelola acara mereka -->
+                    <li class="nav-item" th:if="${loggedInUser != null and loggedInUser.role.roleName == 'ORGANIZER'}">
+                        <a class="nav-link" href="/organizer/events">Katalog Acara</a>
+                    </li>
+                    
+                    <!-- Tamu: Masuk & Daftar -->
+                    <li class="nav-item ms-2" th:if="${loggedInUser == null}">
+                        <a class="nav-link" href="/login">Masuk</a>
+                    </li>
+                    <li class="nav-item ms-3" th:if="${loggedInUser == null}">
+                        <a class="btn-kikk" href="/register">Daftar Gratis</a>
+                    </li>
+                    
+                    <!-- Login: Dashboard Saya -->
+                    <li class="nav-item ms-lg-4" th:if="${loggedInUser != null}">
+                        <a class="btn-kikk-outline" 
+                           th:href="${loggedInUser.role.roleName == 'USER' ? '/home-user' : (loggedInUser.role.roleName == 'ORGANIZER' ? '/dashboard' : '/home-admin')}">
+                            Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-bg"></div>
+        <div class="hero-overlay"></div>
+        <img src="/images/kikk_floating_element.jpg" alt="Float 1" class="floating-element float-1">
+        <img src="/images/kikk_floating_element.jpg" alt="Float 2" class="floating-element float-2" style="filter: hue-rotate(90deg);">
+        
+        <div class="container hero-content">
+            <div style="font-size: 14px; letter-spacing: 3px; color: var(--kikk-yellow); margin-bottom: 20px; font-weight: 600;" data-aos="fade-down" data-aos-duration="1000">TICKETING PLATFORM MASA DEPAN</div>
+            <h1 class="hero-title kikk-title" data-aos="zoom-in" data-aos-duration="1200" style="font-size: clamp(3rem, 6vw, 6rem); margin-bottom: 30px; text-transform: uppercase;">
+                Temukan Momen<br><span style="color: var(--kikk-yellow); font-style: italic;">Paling Berkesan</span>
+            </h1>
+            <p class="hero-subtitle" data-aos="fade-up" data-aos-duration="1200" data-aos-delay="200">
+                Jelajahi konser, festival, seminar, dan acara eksklusif lainnya. Rasakan pengalaman pemesanan tiket yang seamless, aman, dan premium.
+            </p>
+            
+            <div data-aos="fade-up" data-aos-duration="1000" data-aos-delay="400">
+                <form action="/" method="GET" class="search-glass">
+                    <input type="text" name="search" class="search-input" placeholder="Cari nama artis, acara, atau festival..." th:value="${searchQuery}">
+                    <div class="search-divider d-none d-md-block"></div>
+                    <select name="category" class="search-category d-none d-md-block">
+                        <option value="">Semua Kategori</option>
+                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == selectedCategory}"></option>
+                    </select>
+                    <button type="submit" class="btn-search"><i class="fas fa-search me-2"></i> CARI</button>
+                </form>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Events Catalog Section -->
+    <section class="py-5" style="position: relative; z-index: 10;">
+        <div class="container py-5">
+            <div class="d-flex justify-content-between align-items-end mb-5" data-aos="fade-right">
+                <div>
+                    <div style="font-size: 12px; letter-spacing: 2px; color: var(--kikk-yellow); margin-bottom: 10px;">EKSPLORASI</div>
+                    <h2 class="kikk-title m-0" th:text="${searchQuery != null and !searchQuery.isEmpty()} ? 'Hasil Pencarian' : 'Acara Mendatang'">Acara Mendatang</h2>
+                    <p class="text-muted m-0 mt-2" th:if="${searchQuery != null and !searchQuery.isEmpty()}" th:text="'Menampilkan hasil untuk: ' + ${searchQuery}"></p>
+                </div>
+                <a href="/events" class="btn-kikk-outline d-none d-md-flex align-items-center gap-2" style="padding: 10px 25px; border-color: rgba(255,255,255,0.2);">Lihat Semua <i class="fas fa-arrow-right"></i></a>
+            </div>
+            
+            <!-- Grid Acara -->
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6" th:each="event, iterStat : ${events}" data-aos="fade-up" th:data-aos-delay="${iterStat.index * 100}">
+                    <div class="kikk-card event-card position-relative p-0 overflow-hidden" 
+                         th:data-href="@{/events/{id}(id=${event.id})}"
+                         onclick="window.location.href=this.getAttribute('data-href')"
+                         style="cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;">
+                        <img th:if="${event.imageUrl != null}" class="event-card-img" th:src="${event.imageUrl}" alt="Event Poster">
+                        <img th:unless="${event.imageUrl != null}" class="event-card-img" src="https://placehold.co/400x300/111111/444444?text=Premium+Event" alt="Default Image">
+                        
+                        <div class="event-badge"><i class="fas fa-crown me-1"></i> Unggulan</div>
+                        <div class="event-date">
+                            <span th:text="${event.date}" style="font-size: 1rem;">Tanggal</span>
+                        </div>
+                        
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h4 class="kikk-title mb-2 text-truncate fs-4" th:text="${event.name}">Nama Acara</h4>
+                            <p style="color: var(--kikk-yellow); font-size: 0.9rem;" class="mb-3"><i class="fas fa-map-marker-alt me-2"></i><span th:text="${event.location}">Lokasi</span></p>
+                            <p class="mb-4" style="color: rgba(255,255,255,0.6); font-size: 0.9rem; line-height: 1.6;" th:text="${event.description.length() > 80 ? event.description.substring(0, 80) + '...' : event.description}">Deskripsi</p>
+                            
+                            <div class="mt-auto pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
+                                        <i class="fas fa-building me-2"></i> 
+                                        <span class="text-truncate" style="max-width: 120px;" th:text="${event.organizer != null ? event.organizer.name : 'Eventease'}">Penyelenggara</span>
+                                    </div>
+                                    <a th:href="@{/bookings/checkout/{id}(id=${event.id})}" onclick="event.stopPropagation();" class="btn-kikk py-2 px-4" style="font-size: 0.85rem;">Beli Tiket</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div class="col-12 text-center py-5 kikk-card mt-4" th:if="${#lists.isEmpty(events)}">
+                    <div style="font-size: 4rem; color: rgba(255,255,255,0.1); margin-bottom: 20px;"><i class="fas fa-search"></i></div>
+                    <h4 class="kikk-title mb-3">Acara Tidak Ditemukan</h4>
+                    <p style="color: rgba(255,255,255,0.5);">Coba gunakan kata kunci lain untuk mencari acara yang Anda inginkan.</p>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5 d-block d-md-none">
+                <a href="/events" class="btn-kikk-outline w-100 justify-content-center">Lihat Semua Acara</a>
+            </div>
+            
+            <!-- Premium Pagination -->
+            <div th:if="${eventPage != null and eventPage.totalPages > 1}" class="d-flex justify-content-center mt-5" data-aos="fade-up">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-premium">
+                        <!-- Previous Button -->
+                        <li class="page-item" th:classappend="${eventPage.first} ? 'disabled'">
+                            <a class="page-link px-4 py-2" th:href="@{/(page=${eventPage.number - 1}, search=${searchQuery})}">
+                                <i class="fas fa-chevron-left me-2"></i> Prev
+                            </a>
+                        </li>
+                        <!-- Page Numbers -->
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, eventPage.totalPages - 1)}"
+                            th:classappend="${eventPage.number == i} ? 'active'">
+                            <a class="page-link px-3 py-2 fw-bold" 
+                               th:href="@{/(page=${i}, search=${searchQuery})}"
+                               th:text="${i + 1}">1</a>
+                        </li>
+                        <!-- Next Button -->
+                        <li class="page-item" th:classappend="${eventPage.last} ? 'disabled'">
+                            <a class="page-link px-4 py-2" th:href="@{/(page=${eventPage.number + 1}, search=${searchQuery})}">
+                                Next <i class="fas fa-chevron-right ms-2"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer Premium -->
+    <footer style="background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 80px; padding-bottom: 30px;">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-5 mb-5 mb-lg-0">
+                    <h3 class="kikk-title text-lowercase mb-4" style="font-size: 2rem;">
+                        Eventease.
+                    </h3>
+                    <p style="color: rgba(255,255,255,0.6); line-height: 1.8; max-width: 400px; margin-bottom: 30px;">
+                        Platform penjualan tiket online eksklusif yang menghubungkan Anda dengan pengalaman acara terbaik. Desain premium, transaksi aman, dan tanpa hambatan.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                
+                <style>
+                    .social-icon {
+                        width: 45px; height: 45px;
+                        border-radius: 50%;
+                        background: rgba(255,255,255,0.05);
+                        display: flex; align-items: center; justify-content: center;
+                        color: #fff; text-decoration: none;
+                        border: 1px solid rgba(255,255,255,0.1);
+                        transition: all 0.3s;
+                    }
+                    .social-icon:hover {
+                        background: var(--kikk-yellow); color: #000; border-color: var(--kikk-yellow);
+                        transform: translateY(-3px);
+                    }
+                    .footer-link {
+                        color: rgba(255,255,255,0.6); text-decoration: none; transition: 0.3s; display: block; margin-bottom: 15px;
+                    }
+                    .footer-link:hover { color: var(--kikk-yellow); transform: translateX(5px); }
+                
+        /* Mobile Responsiveness */
+        @media (max-width: 767.98px) {
+            .search-glass {
+                flex-direction: column;
+                border-radius: 20px;
+                padding: 15px;
+            }
+            .search-input, .search-category, .btn-search {
+                width: 100%;
+                margin-bottom: 10px;
+                border-radius: 10px !important;
+            }
+            .search-divider {
+                width: 100%;
+                height: 1px;
+                margin: 10px 0;
+            }
+            .btn-search {
+                margin-bottom: 0;
+                border-radius: 15px !important;
+            }
+            .hero-section {
+                padding-top: 100px;
+            }
+            .navbar-custom .navbar-collapse {
+                background: rgba(11, 6, 22, 0.95);
+                border-radius: 15px;
+                padding: 15px;
+                margin-top: 10px;
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+        }
+    </style>
+                
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h6 style="color: #fff; font-weight: 600; letter-spacing: 1px; margin-bottom: 25px; text-transform: uppercase;">Eksplorasi</h6>
+                    <a href="/" class="footer-link">Beranda</a>
+                    <a href="/events" class="footer-link">Katalog Acara</a>
+                    <a href="#" class="footer-link">Bantuan Pembelian</a>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h6 style="color: #fff; font-weight: 600; letter-spacing: 1px; margin-bottom: 25px; text-transform: uppercase;">Penyelenggara</h6>
+                    <a href="/login" class="footer-link">Masuk Dasbor</a>
+                    <a href="/register" class="footer-link">Buat Acara</a>
+                    <a href="#" class="footer-link">Harga & Sistem</a>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <h6 style="color: #fff; font-weight: 600; letter-spacing: 1px; margin-bottom: 25px; text-transform: uppercase;">Kontak</h6>
+                    <div style="color: rgba(255,255,255,0.6); margin-bottom: 15px;"><i class="fas fa-map-marker-alt me-3" style="color: var(--kikk-yellow);"></i> Jakarta, Indonesia</div>
+                    <div style="color: rgba(255,255,255,0.6); margin-bottom: 15px;"><i class="fas fa-envelope me-3" style="color: var(--kikk-yellow);"></i> hello@eventease.com</div>
+                    <div style="color: rgba(255,255,255,0.6);"><i class="fas fa-phone-alt me-3" style="color: var(--kikk-yellow);"></i> +62 812 3456 7890</div>
+                </div>
+            </div>
+            
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center pt-4" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                <p class="mb-0 small" style="color: rgba(255,255,255,0.4);">&copy; 2026 Eventease. All rights reserved.</p>
+                <div class="mt-3 mt-md-0 small">
+                    <a href="#" class="text-decoration-none me-4" style="color: rgba(255,255,255,0.4);">Privacy Policy</a>
+                    <a href="#" class="text-decoration-none" style="color: rgba(255,255,255,0.4);">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ once: true, offset: 50 });
+        
+        // Navbar blur on scroll
+        window.addEventListener('scroll', function() {
+            var navbar = document.querySelector('.navbar-custom');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(11, 6, 22, 0.9)';
+                navbar.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            } else {
+                navbar.style.background = 'transparent';
+                navbar.style.borderBottom = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

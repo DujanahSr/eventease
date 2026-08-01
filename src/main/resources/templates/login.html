@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk | Eventease</title>
+    <!-- PWA & SEO -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0b0616">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --auth-primary: #facc15;
+            --auth-primary-hover: #eab308;
+            --bg-dark: #0f172a;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: url('/images/auth-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            margin: 0;
+            position: relative;
+        }
+        /* Overlay to ensure text readability */
+        .page-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.8) 100%);
+            z-index: 1;
+        }
+        .auth-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            animation: floatUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        @keyframes floatUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .auth-card {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 50px 40px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Subtle glow effect behind card */
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(250,204,21,0.05) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .auth-brand {
+            font-family: 'Playfair Display', serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 2.5rem;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: -1px;
+            display: inline-block;
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+        .auth-brand:hover {
+            color: var(--auth-primary);
+            transform: scale(1.05);
+        }
+        .auth-subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        .form-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            background: rgba(0,0,0,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            color: #fff !important;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.3) !important;
+        }
+        .form-control:focus {
+            background: rgba(0,0,0,0.4) !important;
+            border-color: var(--auth-primary) !important;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.1) !important;
+            transform: translateY(-2px);
+        }
+
+        .input-group-text {
+            background: rgba(0,0,0,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-left: none !important;
+            color: rgba(255,255,255,0.5) !important;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus + .input-group-text {
+            border-color: var(--auth-primary) !important;
+            background: rgba(0,0,0,0.4) !important;
+            color: var(--auth-primary) !important;
+        }
+
+        .btn-auth {
+            background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+            color: #000;
+            font-weight: 700;
+            padding: 15px 30px;
+            border-radius: 14px;
+            border: none;
+            width: 100%;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 20px rgba(250,204,21,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-auth:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(250,204,21,0.4);
+            background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
+        }
+        .btn-auth:active {
+            transform: translateY(1px);
+        }
+
+        .auth-links {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.6);
+        }
+        .auth-links a {
+            color: var(--auth-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .auth-links a:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--auth-primary);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .divider span { padding: 0 15px; }
+
+        .btn-google {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        
+        .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
+    
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1) !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            color: #fca5a5 !important;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1) !important;
+            border: 1px solid rgba(16, 185, 129, 0.3) !important;
+            color: #a7f3d0 !important;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            text-align: left;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-overlay"></div>
+    
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="/" class="auth-brand">Eventease.</a>
+                <p class="auth-subtitle">Masuk untuk melanjutkan perjalanan Anda</p>
+            </div>
+            
+            
+            
+            
+            <div th:if="${message != null and (message.toLowerCase().contains('berhasil') or message.toLowerCase().contains('dikirim'))}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${message != null and not (message.toLowerCase().contains('berhasil') or message.toLowerCase().contains('dikirim'))}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${message}"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${error != null}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>Email atau kata sandi salah.
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+<form th:action="@{/login-user}" method="post">
+                <div class="mb-4">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" name="email" id="email" class="form-control" placeholder="nama@email.com" th:value="${request?.email}" required>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="password" class="form-label mb-0">Kata Sandi</label>
+                        <a href="/forgot-password" class="auth-links m-0 p-0" style="font-size: 0.8rem; margin-top:0;">Lupa sandi?</a>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" name="password" id="password" class="form-control border-end-0" placeholder="Masukkan kata sandi" required style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                        <span class="input-group-text cursor-pointer" id="togglePassword" style="cursor: pointer; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-auth mt-2">Masuk ke Akun <i class="fas fa-arrow-right ms-2"></i></button>
+                
+                <div class="divider"><span>Atau</span></div>
+                
+                <!-- Custom Google Sign In button for better styling -->
+                <div id="g_id_onload"
+                     data-client_id="146370175848-nv395oku7lv35171e8t26011sajhamvp.apps.googleusercontent.com"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin" 
+                     data-type="standard" 
+                     data-size="large" 
+                     data-theme="outline" 
+                     data-text="sign_in_with" 
+                     data-shape="rectangular" 
+                     data-logo_alignment="center"
+                     style="display: flex; justify-content: center; width: 100%;">
+                </div>
+                
+                <div class="auth-links mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                    Belum punya akun? <a href="/register">Daftar sekarang</a>
+                </div>
+            </form>
+            
+            <form id="google-login-form" action="/auth/google" method="POST" style="display: none;">
+                <input type="hidden" name="credential" id="google-credential">
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Password toggle visibility with smooth icon change
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            const icon = this.querySelector('i');
+            
+            if(type === 'text') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.style.color = 'var(--auth-primary)';
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                icon.style.color = '';
+            }
+        });
+        
+        function handleCredentialResponse(response) {
+            document.getElementById('google-credential').value = response.credential;
+            document.getElementById('google-login-form').submit();
+        }
+    </script>
+</body>
+</html>
