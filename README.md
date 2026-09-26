@@ -1,13 +1,16 @@
 # Eventease
 
+[![Eventease CI Pipeline](https://github.com/DujanahSr/eventease/actions/workflows/ci.yml/badge.svg)](https://github.com/DujanahSr/eventease/actions/workflows/ci.yml)
+
 Eventease adalah platform manajemen dan penjualan tiket acara berbasis web yang dibangun dengan Spring Boot. Sistem ini menyediakan alur kerja yang lengkap bagi penyelenggara untuk mengelola acara, menjual tiket, dan memvalidasi kehadiran menggunakan kode QR, sekaligus memberikan pengalaman pembelian tiket yang mulus bagi pengguna dengan integrasi *payment gateway*.
 
 ## Fitur Utama
 
-- **Autentikasi Multi-Peran**: 
+- **Autentikasi Multi-Peran (Stateless JWT)**: 
   - **User**: Mencari acara, membeli tiket, dan melihat riwayat pembelian.
   - **Organizer**: Membuat/mengelola acara, memindai kode QR peserta, mengelola saldo dan pencairan dana.
   - **Admin**: Memantau sistem, mengelola pengguna, dan menyetujui penarikan dana.
+- **RESTful API & Standar Respon Terpusat**: Seluruh endpoint API dilengkapi format respon terstandarisasi (`ApiResponse<T>`) dan penanganan error terpusat (`GlobalExceptionHandler`) dengan Jakarta Validation.
 - **Tiket & Integrasi QR**: Pembuatan *e-ticket* otomatis dalam format PDF yang dilengkapi kode QR unik untuk keperluan *check-in*.
 - **Payment Gateway**: Terintegrasi dengan Midtrans untuk memproses pembayaran (QRIS, GoPay, Virtual Account).
 - **Penyimpanan Media**: Pengunggahan dan penyimpanan gambar ditangani melalui Cloudinary.
@@ -15,10 +18,10 @@ Eventease adalah platform manajemen dan penjualan tiket acara berbasis web yang 
 
 ## Teknologi yang Digunakan
 
-- **Backend**: Java 21, Spring Boot 3, Spring MVC, Spring Data JPA, Hibernate
-- **Frontend**: HTML, CSS, Bootstrap 5, Thymeleaf
+- **Backend**: Java 21, Spring Boot 3, Spring Security 6 (Stateless JWT & Refresh Token), Spring Data JPA, Hibernate
+- **Frontend**: HTML5, CSS3, Bootstrap 5, Thymeleaf (Sedang bertransisi ke Decoupled React + TypeScript)
 - **Database**: MySQL
-- **Integrasi**: Midtrans API, Cloudinary API, OpenPDF, ZXing (QR Code Scanner)
+- **Integrasi & Tools**: Midtrans API, Cloudinary API, OpenPDF, ZXing (QR Code Scanner), GitHub Actions (CI/CD)
 
 ## Persyaratan Sistem
 
