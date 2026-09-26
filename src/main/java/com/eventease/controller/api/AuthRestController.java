@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthRestController {
 
     private final AuthService authService;
+    private final com.eventease.cache.TokenBlacklistService tokenBlacklistService;
+    private final com.eventease.security.JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponseDto>> register(@Valid @RequestBody RegisterDto registerDto) {
@@ -60,9 +63,12 @@ public class AuthRestController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        // Pada stateless JWT, logout di sisi client cukup menghapus token dari storage.
-        // Di Tahap 2, kita dapat menyematkan token blacklist ke Redis.
-        return ResponseEntity.ok(ApiResponse.success("Logout berhasil. Token telah dihapus.", null));
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            tokenBlacklistService.blacklistToken(token, jwtService.getAccessTokenExpiration());
+            log.info("User logout: token telah dimasukkan ke Redis blacklist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Logout berhasil. Token telah dibatalkan dan dimasukkan ke blacklist.", null));
     }
 }

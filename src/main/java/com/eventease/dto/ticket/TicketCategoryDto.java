@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TicketCategoryDto {
+public class TicketCategoryDto implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String id;
     private String name;
     private double price;

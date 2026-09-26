@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PagedResponse<T> {
+public class PagedResponse<T> implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private List<T> content;
     private int pageNumber;
     private int pageSize;

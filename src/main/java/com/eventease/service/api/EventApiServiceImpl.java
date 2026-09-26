@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +46,7 @@ public class EventApiServiceImpl implements EventApiService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "events", key = "T(java.util.Objects).toString(#search, '') + '_' + T(java.util.Objects).toString(#categoryId, '') + '_' + #page + '_' + #size + '_' + #sortBy + '_' + #sortDir")
     public PagedResponse<EventSummaryDto> getAllEvents(String search, String categoryId, int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -59,6 +62,7 @@ public class EventApiServiceImpl implements EventApiService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "event_details", key = "#id")
     public EventDetailDto getEventById(String id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Acara", "id", id));
@@ -67,6 +71,7 @@ public class EventApiServiceImpl implements EventApiService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "events", allEntries = true)
     public EventDetailDto createEvent(EventRequestDto requestDto, UserPrincipal userPrincipal) {
         log.info("Membuat acara baru: {} oleh user: {}", requestDto.getName(), userPrincipal.getEmail());
 
@@ -105,6 +110,7 @@ public class EventApiServiceImpl implements EventApiService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"events", "event_details"}, allEntries = true)
     public EventDetailDto updateEvent(String id, EventRequestDto requestDto, UserPrincipal userPrincipal) {
         log.info("Memperbarui acara ID: {} oleh user: {}", id, userPrincipal.getEmail());
 
@@ -158,6 +164,7 @@ public class EventApiServiceImpl implements EventApiService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"events", "event_details"}, allEntries = true)
     public void deleteEvent(String id, UserPrincipal userPrincipal) {
         log.info("Menghapus acara ID: {} oleh user: {}", id, userPrincipal.getEmail());
 

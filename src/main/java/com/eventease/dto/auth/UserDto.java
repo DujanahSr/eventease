@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
+public class UserDto implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String id;
     private String name;

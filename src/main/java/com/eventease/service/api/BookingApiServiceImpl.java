@@ -44,6 +44,7 @@ public class BookingApiServiceImpl implements BookingApiService {
     private final MidtransService midtransService;
     private final PdfService pdfService;
     private final EmailService emailService;
+    private final com.eventease.messaging.producer.TicketFulfillmentProducer ticketFulfillmentProducer;
 
     @Value("${midtrans.server.key}")
     private String serverKey;
@@ -237,12 +238,27 @@ public class BookingApiServiceImpl implements BookingApiService {
 
             log.info("Pembayaran berhasil dicatat untuk booking: {}", realBookingId);
 
-            // Kirim tiket PDF & Notifikasi Email
-            try {
-                byte[] pdfBytes = pdfService.generateTicketPdf(booking);
-                emailService.sendETicketEmail(booking, pdfBytes);
-            } catch (Exception e) {
-                log.error("Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
+            // Kirim pesan ke antrean asinkron RabbitMQ
+            com.eventease.messaging.dto.TicketFulfillmentMessage message = com.eventease.messaging.dto.TicketFulfillmentMessage.builder()
+                    .bookingId(realBookingId)
+                    .userEmail(booking.getUser().getEmail())
+                    .buyerName(booking.getUser().getName())
+                    .eventName(booking.getTicketCategory().getEvent().getName())
+                    .ticketTier(booking.getTicketCategory().getName())
+                    .quantity(booking.getParticipants())
+                    .totalAmount(Double.parseDouble(grossAmount))
+                    .build();
+
+            boolean queued = ticketFulfillmentProducer.publishTicketFulfillment(message);
+
+            if (!queued) {
+                // Fallback jika broker RabbitMQ offline di lingkungan dev lokal: proses secara sinkron
+                try {
+                    byte[] pdfBytes = pdfService.generateTicketPdf(booking);
+                    emailService.sendETicketEmail(booking, pdfBytes);
+                } catch (Exception e) {
+                    log.error("Fallback: Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
+                }
             }
 
             return true;

@@ -25,6 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final com.eventease.cache.TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(
@@ -43,6 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
+
+        // Cek apakah token sudah di-blacklist (misal karena user sudah logout)
+        if (tokenBlacklistService.isBlacklisted(jwt)) {
+            log.warn("Token JWT telah dibatalkan / masuk blacklist (pengguna sudah logout).");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         try {
             userEmail = jwtService.extractUsername(jwt);
