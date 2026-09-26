@@ -1,0 +1,14 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+frontend/node_modules/
+frontend/dist/
+.git
+.gitignore
+.idea
+.vscode
+*.log
+uploads/
+.env
+.env.*
+application-secret.properties
+application-dev.properties
