@@ -19,6 +19,7 @@ import java.util.Map;
 public class ScanController {
 
     private final BookingService bookingService;
+    private final com.eventease.websocket.service.WebSocketNotificationService webSocketNotificationService;
 
     @GetMapping("/scan")
     public String showScanner(HttpSession session, Model model) {
@@ -85,6 +86,9 @@ public class ScanController {
         // Tiket valid, tandai CHECKED_IN
         booking.setStatus(Booking.Status.CHECKED_IN);
         bookingService.save(booking);
+
+        // Siarkan notifikasi kehadiran real-time ke Dashboard via WebSocket
+        webSocketNotificationService.notifyCheckIn(booking);
 
         response.put("success", true);
         response.put("message", "Check-in Berhasil!");

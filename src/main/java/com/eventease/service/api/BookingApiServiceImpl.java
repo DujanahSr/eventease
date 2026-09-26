@@ -45,6 +45,7 @@ public class BookingApiServiceImpl implements BookingApiService {
     private final PdfService pdfService;
     private final EmailService emailService;
     private final com.eventease.messaging.producer.TicketFulfillmentProducer ticketFulfillmentProducer;
+    private final com.eventease.websocket.service.WebSocketNotificationService webSocketNotificationService;
 
     @Value("${midtrans.server.key}")
     private String serverKey;
@@ -173,6 +174,9 @@ public class BookingApiServiceImpl implements BookingApiService {
         // Tiket valid -> tandai CHECKED_IN
         booking.setStatus(Booking.Status.CHECKED_IN);
         bookingRepository.save(booking);
+
+        // Siarkan notifikasi kehadiran real-time ke Dashboard via WebSocket STOMP
+        webSocketNotificationService.notifyCheckIn(booking);
 
         return TicketValidationResponseDto.builder()
                 .valid(true)

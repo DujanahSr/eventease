@@ -14,6 +14,8 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, String> {
     boolean existsByTicketCategoryEventId(String eventId);
 
+    long countByTicketCategoryEventIdAndStatus(String eventId, Booking.Status status);
+
     List<Booking> findByUserId(String userId);
 
     List<Booking> findByUser(Akun user);
