@@ -1,0 +1,279 @@
+package com.eventease.service.api;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.eventease.constant.RoleConstants;
+import com.eventease.dto.booking.BookingRequestDto;
+import com.eventease.dto.booking.BookingResponseDto;
+import com.eventease.dto.booking.TicketValidationResponseDto;
+import com.eventease.exception.BadRequestException;
+import com.eventease.exception.ForbiddenException;
+import com.eventease.exception.ResourceNotFoundException;
+import com.eventease.model.Akun;
+import com.eventease.model.Booking;
+import com.eventease.model.Payment;
+import com.eventease.model.TicketCategory;
+import com.eventease.repository.BookingRepository;
+import com.eventease.repository.PaymentRepository;
+import com.eventease.repository.TicketCategoryRepository;
+import com.eventease.security.UserPrincipal;
+import com.eventease.service.EmailService;
+import com.eventease.service.MidtransService;
+import com.eventease.service.PdfService;
+import com.eventease.util.MidtransSignatureVerifier;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class BookingApiServiceImpl implements BookingApiService {
+
+    private final BookingRepository bookingRepository;
+    private final TicketCategoryRepository ticketCategoryRepository;
+    private final PaymentRepository paymentRepository;
+    private final MidtransService midtransService;
+    private final PdfService pdfService;
+    private final EmailService emailService;
+
+    @Value("${midtrans.server.key}")
+    private String serverKey;
+
+    @Override
+    @Transactional
+    public BookingResponseDto createBooking(BookingRequestDto requestDto, UserPrincipal userPrincipal) {
+        log.info("Membuat pesanan tiket kategori ID: {} oleh user: {}", requestDto.getTicketCategoryId(), userPrincipal.getEmail());
+
+        TicketCategory ticketCategory = ticketCategoryRepository.findById(requestDto.getTicketCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Kategori Tiket", "id", requestDto.getTicketCategoryId()));
+
+        if (requestDto.getQuantity() > ticketCategory.getAvailableStock()) {
+            throw new BadRequestException("Jumlah tiket yang diminta (" + requestDto.getQuantity() + 
+                    ") melebihi stok yang tersedia (" + ticketCategory.getAvailableStock() + ").");
+        }
+
+        // Kurangi stok sementara untuk pemesanan ini
+        ticketCategory.setAvailableStock(ticketCategory.getAvailableStock() - requestDto.getQuantity());
+        ticketCategoryRepository.save(ticketCategory);
+
+        Booking booking = new Booking();
+        booking.setUser(userPrincipal.getAkun());
+        booking.setTicketCategory(ticketCategory);
+        booking.setParticipants(requestDto.getQuantity());
+        booking.setEventDate(LocalDate.now());
+        booking.setStatus(Booking.Status.PENDING);
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Minta Snap Token dari Midtrans
+        String snapToken = null;
+        try {
+            snapToken = midtransService.getSnapToken(savedBooking);
+        } catch (Exception ex) {
+            log.error("Gagal mendapatkan Snap Token dari Midtrans: {}", ex.getMessage());
+        }
+
+        return BookingResponseDto.fromEntity(savedBooking, snapToken);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getMyBookings(UserPrincipal userPrincipal) {
+        log.info("Mengambil riwayat tiket untuk user: {}", userPrincipal.getEmail());
+        List<Booking> bookings = bookingRepository.findByUser(userPrincipal.getAkun());
+        return bookings.stream()
+                .map(b -> BookingResponseDto.fromEntity(b, null))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingResponseDto getBookingById(String bookingId, UserPrincipal userPrincipal) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        validateBookingAccess(booking, userPrincipal);
+        return BookingResponseDto.fromEntity(booking, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] getTicketPdf(String bookingId, UserPrincipal userPrincipal) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        validateBookingAccess(booking, userPrincipal);
+
+        if (booking.getStatus() != Booking.Status.PAID && booking.getStatus() != Booking.Status.CHECKED_IN) {
+            throw new BadRequestException("Tiket belum lunas atau tidak aktif. Status saat ini: " + booking.getStatus());
+        }
+
+        try {
+            return pdfService.generateTicketPdf(booking);
+        } catch (Exception e) {
+            log.error("Gagal membuat file PDF tiket: ", e);
+            throw new BadRequestException("Gagal mengunduh tiket PDF: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public TicketValidationResponseDto validateAndCheckInTicket(String bookingId, UserPrincipal userPrincipal) {
+        log.info("Validasi QR Code tiket: {} oleh organizer: {}", bookingId, userPrincipal.getEmail());
+
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            return TicketValidationResponseDto.builder()
+                    .valid(false)
+                    .message("Tiket tidak ditemukan dalam sistem.")
+                    .bookingId(bookingId)
+                    .build();
+        }
+
+        // Pastikan pemindai adalah penyelenggara acara tersebut atau platform ADMIN
+        boolean isAdmin = userPrincipal.getRole().equalsIgnoreCase(RoleConstants.ROLE_ADMIN);
+        Akun organizer = booking.getTicketCategory().getEvent().getOrganizer();
+        boolean isOwner = organizer != null && organizer.getId().equals(userPrincipal.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("Akses ditolak: Tiket ini bukan untuk acara yang Anda selenggarakan.");
+        }
+
+        if (booking.getStatus() == Booking.Status.CHECKED_IN) {
+            return TicketValidationResponseDto.builder()
+                    .valid(false)
+                    .message("Tiket sudah pernah digunakan sebelumnya (Sudah Check-In).")
+                    .bookingId(booking.getId())
+                    .eventName(booking.getTicketCategory().getEvent().getName())
+                    .ticketTier(booking.getTicketCategory().getName())
+                    .attendeeCount(booking.getParticipants())
+                    .buyerName(booking.getUser().getName())
+                    .buyerEmail(booking.getUser().getEmail())
+                    .build();
+        }
+
+        if (booking.getStatus() != Booking.Status.PAID) {
+            return TicketValidationResponseDto.builder()
+                    .valid(false)
+                    .message("Tiket belum lunas atau telah dibatalkan. Status: " + booking.getStatus())
+                    .bookingId(booking.getId())
+                    .build();
+        }
+
+        // Tiket valid -> tandai CHECKED_IN
+        booking.setStatus(Booking.Status.CHECKED_IN);
+        bookingRepository.save(booking);
+
+        return TicketValidationResponseDto.builder()
+                .valid(true)
+                .message("Check-in Berhasil! Tiket valid.")
+                .bookingId(booking.getId())
+                .eventName(booking.getTicketCategory().getEvent().getName())
+                .ticketTier(booking.getTicketCategory().getName())
+                .attendeeCount(booking.getParticipants())
+                .buyerName(booking.getUser().getName())
+                .buyerEmail(booking.getUser().getEmail())
+                .checkedInAt(LocalDateTime.now())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public boolean processPaymentWebhook(Map<String, Object> payload) {
+        String orderId = (String) payload.get("order_id");
+        String statusCode = (String) payload.get("status_code");
+        String grossAmount = (String) payload.get("gross_amount");
+        String signatureKey = (String) payload.get("signature_key");
+        String transactionStatus = (String) payload.get("transaction_status");
+
+        log.info("Menerima notifikasi Midtrans: orderId={}, status={}", orderId, transactionStatus);
+
+        if (orderId == null || transactionStatus == null) {
+            log.warn("Payload Webhook Midtrans tidak lengkap");
+            return false;
+        }
+
+        // 1. Verifikasi Kriptografis Signature Key Midtrans (SHA-512)
+        if (signatureKey != null && !MidtransSignatureVerifier.verify(orderId, statusCode, grossAmount, serverKey, signatureKey)) {
+            log.error("Signature Key Midtrans TIDAK VALID! Potensi manipulasi request webhook.");
+            return false;
+        }
+
+        // 2. Ekstrak real bookingId (format: bookingId-timestamp)
+        String realBookingId = orderId.split("-")[0];
+        Booking booking = bookingRepository.findById(realBookingId).orElse(null);
+        if (booking == null) {
+            log.warn("Pesanan dengan ID: {} tidak ditemukan", realBookingId);
+            return false;
+        }
+
+        // 3. Pengecekan IDEMPOTENSI (Mencegah double processing jika webhook dikirim berulang)
+        if (booking.getStatus() == Booking.Status.PAID) {
+            log.info("Idempotent Guard: Booking {} sudah berstatus PAID. Mengabaikan eksekusi ulang.", realBookingId);
+            return true;
+        }
+
+        // 4. Proses status transaksi
+        if ("settlement".equals(transactionStatus) || "capture".equals(transactionStatus)) {
+            booking.setStatus(Booking.Status.PAID);
+            bookingRepository.save(booking);
+
+            // Simpan catatan pembayaran
+            Payment payment = new Payment();
+            payment.setBooking(booking);
+            payment.setUser(booking.getUser());
+            payment.setAmount(Double.parseDouble(grossAmount));
+            payment.setPaymentDate(LocalDateTime.now());
+            paymentRepository.save(payment);
+
+            log.info("Pembayaran berhasil dicatat untuk booking: {}", realBookingId);
+
+            // Kirim tiket PDF & Notifikasi Email
+            try {
+                byte[] pdfBytes = pdfService.generateTicketPdf(booking);
+                emailService.sendETicketEmail(booking, pdfBytes);
+            } catch (Exception e) {
+                log.error("Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
+            }
+
+            return true;
+
+        } else if ("cancel".equals(transactionStatus) || "expire".equals(transactionStatus) || "deny".equals(transactionStatus)) {
+            booking.setStatus(Booking.Status.CANCELED);
+            bookingRepository.save(booking);
+
+            // Kembalikan stok tiket yang sempat ditahan
+            TicketCategory ticketCategory = booking.getTicketCategory();
+            if (ticketCategory != null) {
+                ticketCategory.setAvailableStock(ticketCategory.getAvailableStock() + booking.getParticipants());
+                ticketCategoryRepository.save(ticketCategory);
+            }
+
+            log.info("Pesanan {} dibatalkan/kedaluwarsa. Stok tiket telah dikembalikan.", realBookingId);
+            return true;
+        }
+
+        return true;
+    }
+
+    private void validateBookingAccess(Booking booking, UserPrincipal userPrincipal) {
+        boolean isAdmin = userPrincipal.getRole().equalsIgnoreCase(RoleConstants.ROLE_ADMIN);
+        boolean isBuyer = booking.getUser() != null && booking.getUser().getId().equals(userPrincipal.getId());
+        
+        Akun organizer = booking.getTicketCategory().getEvent().getOrganizer();
+        boolean isOrganizer = organizer != null && organizer.getId().equals(userPrincipal.getId());
+
+        if (!isAdmin && !isBuyer && !isOrganizer) {
+            throw new ForbiddenException("Akses ditolak: Anda tidak memiliki izin untuk melihat pesanan tiket ini.");
+        }
+    }
+}

@@ -52,11 +52,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                        .requestMatchers("/api/payments/webhook/**", "/payments/notification").permitAll()
+                        .requestMatchers("/api/payments/webhook/**", "/api/payment/notification", "/payments/notification").permitAll()
                         
                         // Role-based API protection
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers("/api/organizer/**", "/api/scanner/**").hasAnyRole("ORGANIZER", "ADMIN")
                         
                         // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
