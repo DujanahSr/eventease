@@ -30,7 +30,7 @@ public class Booking {
     private LocalDate eventDate; 
     private int participants; 
 
-    @Column(name = "status", columnDefinition = "VARCHAR(50)")
+    @Column(name = "status", length = 50)
     @Enumerated(EnumType.STRING) 
     private Status status;
 

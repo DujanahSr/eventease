@@ -1,28 +1,27 @@
 services:
   # =========================================================================
-  # Database Service: MySQL 8.0
+  # Database Service: PostgreSQL 16 Alpine
   # =========================================================================
-  mysql:
-    image: mysql:8.0
-    container_name: eventease-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: eventease-postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-eventease_db}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
-      MYSQL_USER: ${DB_USER:-eventease_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-eventease_secret123}
+      POSTGRES_DB: ${DB_NAME:-eventease_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secret123}
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - eventease_net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eventease_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 10s
 
   # =========================================================================
   # Cache & Token Blacklist Service: Redis 7 Alpine
@@ -77,16 +76,16 @@ services:
     container_name: eventease-backend
     restart: unless-stopped
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-eventease_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Jakarta&characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-eventease_user}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-eventease_secret123}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-eventease_db}?characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres_secret123}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
@@ -144,7 +143,7 @@ services:
 # Persistent Volumes & Network Definitions
 # =========================================================================
 volumes:
-  mysql_data:
+  postgres_data:
     driver: local
   redis_data:
     driver: local

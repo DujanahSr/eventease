@@ -7,12 +7,13 @@
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-316192?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3-FF6600?logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?logo=nginx&logoColor=white)
 
-Eventease adalah platform manajemen event dan *ticketing* modern berarsitektur **Decoupled Monolith** dengan orientasi *production-ready*. Dibangun dengan **Spring Boot 3 (Java 21)** dan **React + TypeScript (Vite)**, platform ini mengintegrasikan antrean pesan asinkron (**RabbitMQ**), caching performa tinggi (**Redis**), komunikasi dua arah real-time (**WebSocket STOMP**), serta infrastruktur containerisasi mandiri (**Docker Compose & Nginx**) yang siap dideploy di Linux VPS.
+Eventease adalah platform manajemen event dan *ticketing* modern berarsitektur **Decoupled Monolith** dengan orientasi *production-ready*. Dibangun dengan **Spring Boot 3 (Java 21)** dan **React + TypeScript (Vite)**, platform ini mengintegrasikan basis data relasional andal (**PostgreSQL 16**), antrean pesan asinkron (**RabbitMQ**), caching performa tinggi (**Redis**), komunikasi dua arah real-time (**WebSocket STOMP**), serta infrastruktur containerisasi mandiri (**Docker Compose & Nginx**) yang siap dideploy di Linux VPS.
 
 ---
 
@@ -33,7 +34,7 @@ graph TD
     end
     
     subgraph DataAndInfra["Infrastructure Layer"]
-        MySQL[("MySQL 8.0<br/>ACID Transactions")]
+        Postgres[("PostgreSQL 16<br/>ACID Transactions")]
         Redis[("Redis 7<br/>Catalog Cache & Token Blacklist")]
         RabbitMQ{{"RabbitMQ Message Broker<br/>Exchange: eventease.exchange"}}
         Worker["Async Fulfillment Consumer<br/>PDF Ticket & SMTP Email Worker"]
@@ -46,7 +47,7 @@ graph TD
     
     Security --> Redis
     REST --> Services
-    Services --> MySQL
+    Services --> Postgres
     Services -->|Cache-Aside| Redis
     Services -->|Publish Ticket Fulfillment| RabbitMQ
     RabbitMQ -->|Queue: ticket.fulfillment| Worker
@@ -93,7 +94,7 @@ graph TD
 | **Backend Runtime** | Java 21 (Eclipse Temurin) | Modern LTS Java |
 | **Framework** | Spring Boot 3.4.0 | Core backend framework |
 | **Security** | Spring Security 6 & JJWT 0.12.6 | Stateless JWT + Refresh Token |
-| **Database** | MySQL 8.0 + Spring Data JPA | Transaksional ACID & Hibernate ORM |
+| **Database** | PostgreSQL 16 Alpine + Spring Data JPA | Transaksional ACID & Hibernate ORM (Auto Dialect) |
 | **Caching** | Redis 7 Alpine | Spring Cache & Token Blacklist |
 | **Message Broker** | RabbitMQ 3 Management Alpine | Asynchronous ticket fulfillment |
 | **Real-Time** | Spring WebSocket + STOMP | Real-time attendee check-in broadcasting |
@@ -131,7 +132,7 @@ Semua respon REST API dibungkus dalam format terstandarisasi:
 | **Booking**| `GET` | `/api/bookings/my-tickets`| User | Riwayat pembelian & daftar e-tiket pengguna |
 | **Booking**| `GET` | `/api/bookings/tickets/{id}/pdf` | User | Streaming unduh file e-ticket PDF resmi |
 | **Webhook**| `POST` | `/api/webhooks/midtrans` | Publik/Midtrans | Webhook pembayaran idempoten (SHA-512) |
-| **Scanner**| `POST` | `/api/scanner/check-in` | Organizer/Admin | Validasi QR & broadcast WebSocket real-time |
+| **Scanner**| `POST` | `/api/scanner/verify` | Organizer/Admin | Validasi QR & broadcast WebSocket real-time |
 
 ---
 
@@ -172,7 +173,7 @@ Seluruh stack (MySQL, Redis, RabbitMQ, Backend, Frontend, Nginx) telah dikonfigu
 ### Opsi 2: Menjalankan untuk Pengembangan Lokal (Local Development)
 
 #### Backend (Spring Boot):
-1. Pastikan MySQL berjalan pada port `3306` dan buat database `eventease_db`.
+1. Pastikan **PostgreSQL** berjalan pada port `5432` dan buat database `eventease_db` (atau jika Anda menggunakan MySQL lokal pada port `3306`, Anda cukup menyesuaikan variabel `SPRING_DATASOURCE_URL` pada `.env` atau `application.properties`).
 2. *(Opsional)* Jalankan Redis (port 6379) dan RabbitMQ (port 5672). Jika tidak ada, sistem akan berjalan normal dengan *in-memory fallback*.
 3. Jalankan backend:
    ```bash

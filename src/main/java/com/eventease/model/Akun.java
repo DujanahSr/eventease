@@ -31,9 +31,8 @@ public class Akun {
     
     private String confirmPassword;
 
-    // Field ini dikembalikan hanya untuk mencegah error database (kolom masih ada di tabel MySQL)
-    @Column(columnDefinition = "double default 0")
-    private double saldo = 0;
+    @Column(nullable = false)
+    private double saldo = 0.0;
 
     @Column(name = "reset_token", length = 100)
     private String resetToken;
