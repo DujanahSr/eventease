@@ -22,7 +22,10 @@ public class TicketFulfillmentConsumer {
     private final PdfService pdfService;
     private final EmailService emailService;
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE_TICKET_FULFILLMENT)
+    @RabbitListener(
+            queues = RabbitMQConfig.QUEUE_TICKET_FULFILLMENT, 
+            autoStartup = "${spring.rabbitmq.listener.simple.auto-startup:false}"
+    )
     public void handleTicketFulfillment(TicketFulfillmentMessage message) {
         log.info("RabbitMQ Consumer: Menerima tugas penerbitan e-tiket untuk Booking ID: {}", message.getBookingId());
 
