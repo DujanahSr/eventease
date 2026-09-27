@@ -9,13 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
+    "axios": "^1.7.7",
+    "html5-qrcode": "^2.3.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "axios": "^1.7.7",
-    "sweetalert2": "^11.14.0",
     "sockjs-client": "^1.6.1",
-    "@stomp/stompjs": "^7.0.0"
+    "sweetalert2": "^11.14.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
