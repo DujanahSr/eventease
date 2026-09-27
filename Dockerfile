@@ -1,27 +1,14 @@
-# Stage 1: Build JAR using Maven & Temurin JDK 21
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
-
-WORKDIR /app
-
-# Cache dependencies layer
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code and build production artifact
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# Stage 2: Minimal Production JRE Runtime
-FROM eclipse-temurin:21-jre-alpine
+# Production JRE Runtime for Eventease Spring Boot 3 (Glibc/Ubuntu Jammy for 100% stable compatibility)
+FROM eclipse-temurin:21-jre-jammy
 
 # Security: Run as non-root user
-RUN addgroup -S eventease && adduser -S eventease -G eventease
+RUN groupadd -r eventease && useradd -r -g eventease eventease
 USER eventease:eventease
 
 WORKDIR /app
 
-# Copy executable jar from builder
-COPY --from=builder --chown=eventease:eventease /app/target/*.jar app.jar
+# Copy production executable JAR
+COPY --chown=eventease:eventease target/eventease-*.jar app.jar
 
 # Expose Spring Boot application port
 EXPOSE 8081

@@ -24,7 +24,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d eventease_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -60,6 +60,12 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: DujanahSr07
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          RABBITMQ_ENABLED: "false"
+          CLOUDINARY_CLOUD_NAME: dummy_cloud
+          CLOUDINARY_API_KEY: dummy_key
+          CLOUDINARY_API_SECRET: dummy_secret
+          MIDTRANS_SERVER_KEY: dummy_midtrans_server
+          MIDTRANS_CLIENT_KEY: dummy_midtrans_client
           JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
         run: ./mvnw clean test
 

@@ -71,7 +71,7 @@ services:
     networks:
       - eventease_net
     ports:
-      - "${BACKEND_PORT:-8081}:8081"
+      - "${BACKEND_PORT:-8082}:8081"
 
   # =========================================================================
   # 4. Relational Database: PostgreSQL 16 Alpine
@@ -85,7 +85,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secret123}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -126,11 +126,12 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_COOKIE:-eventease_secret_erlang_cookie}
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MGMT_PORT:-15672}:15672"
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
     networks:
       - eventease_net
     healthcheck:
