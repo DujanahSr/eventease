@@ -81,9 +81,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email sudah terdaftar. Silakan gunakan email lain atau lakukan login.");
         }
 
-        Role userRole = roleRepository.findRoleByRoleName(RoleConstants.ROLE_USER);
-        if (userRole == null) {
-            throw new ResourceNotFoundException("Role pengguna 'USER' belum diinisialisasi dalam database.");
+        String requestedRoleName = (registerDto.getRole() != null && registerDto.getRole().equalsIgnoreCase("ORGANIZER"))
+                ? RoleConstants.ROLE_ORGANIZER
+                : RoleConstants.ROLE_USER;
+
+        Role targetRole = roleRepository.findRoleByRoleName(requestedRoleName);
+        if (targetRole == null) {
+            targetRole = new Role();
+            targetRole.setRoleName(requestedRoleName);
+            targetRole = roleRepository.save(targetRole);
         }
 
         Akun newAkun = new Akun();
@@ -91,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
         newAkun.setEmail(registerDto.getEmail().trim().toLowerCase());
         newAkun.setPhone(registerDto.getPhone().trim());
         newAkun.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        newAkun.setRole(userRole);
+        newAkun.setRole(targetRole);
         newAkun.setSaldo(0);
 
         Akun savedAkun = akunRepository.save(newAkun);

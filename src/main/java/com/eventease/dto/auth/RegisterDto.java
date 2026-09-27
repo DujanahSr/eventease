@@ -33,4 +33,15 @@ public class RegisterDto {
 
     @NotBlank(message = "Konfirmasi password tidak boleh kosong")
     private String confirmPassword;
+
+    private String role;
+
+    public RegisterDto(String name, String email, String phone, String password, String confirmPassword) {
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+        this.confirmPassword = confirmPassword;
+        this.role = "USER";
+    }
 }
