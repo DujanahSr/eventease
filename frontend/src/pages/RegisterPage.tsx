@@ -143,17 +143,16 @@ export const RegisterPage: React.FC = () => {
 
     return (
       <div
-        className="d-flex align-items-center gap-2 mb-2 px-3 py-2 rounded-2"
+        className="d-flex align-items-center gap-2 mb-2 px-3 py-2 rounded-2 anim-fade-in"
         style={{
-          background: 'rgba(239, 68, 68, 0.15)',
+          background: 'rgba(239, 68, 68, 0.16)',
           border: '1px solid #ef4444',
           color: '#fca5a5',
           fontSize: '12px',
           fontWeight: 600,
-          animation: 'fadeIn 0.2s ease-in-out',
         }}
       >
-        <i className="fas fa-exclamation-circle text-danger" style={{ fontSize: '14px' }}></i>
+        <i className="fas fa-exclamation-circle text-danger" style={{ fontSize: '13px' }}></i>
         <span>{errorMsg}</span>
       </div>
     );
@@ -162,11 +161,11 @@ export const RegisterPage: React.FC = () => {
   const getInputStyle = (fieldKey: string): React.CSSProperties => {
     const hasError = !!fieldErrors[fieldKey];
     return {
-      border: hasError ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)',
-      boxShadow: hasError ? '0 0 12px rgba(239, 68, 68, 0.3)' : 'none',
+      border: hasError ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.12)',
+      boxShadow: hasError ? '0 0 12px rgba(239, 68, 68, 0.35)' : 'none',
       transition: 'border-color 0.2s, box-shadow 0.2s',
       borderRadius: '12px',
-      padding: '12px 16px',
+      padding: '12px 16px 12px 42px',
     };
   };
 
@@ -181,65 +180,71 @@ export const RegisterPage: React.FC = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         position: 'relative',
-        padding: '120px 20px 50px 20px',
+        padding: '120px 20px 60px 20px',
       }}
     >
+      {/* Dark Ambient Vignette Overlay */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(circle at center, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%)',
+          background: 'radial-gradient(circle at center, rgba(11,6,22,0.45) 0%, rgba(6,3,12,0.9) 100%)',
           zIndex: 1,
         }}
       ></div>
 
       <div
-        className="auth-container"
+        className="auth-container anim-fade-in"
         style={{
           position: 'relative',
           zIndex: 2,
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '540px',
         }}
       >
         <div
-          className="auth-card"
+          className="luxury-glass-card pattern-wireframe-card"
           style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(35px)',
-            WebkitBackdropFilter: 'blur(35px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '24px',
-            padding: '40px 35px',
-            boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
+            padding: '45px 38px',
+            border: '1px solid rgba(255, 215, 0, 0.25)',
           }}
         >
+          {/* Header Brand */}
           <div className="auth-header text-center mb-4">
             <Link
               to="/"
-              className="auth-brand"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 900,
-                fontStyle: 'italic',
-                fontSize: '2.5rem',
-                color: '#fff',
-                textDecoration: 'none',
-              }}
+              className="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none"
             >
-              Eventease
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: '42px', height: '42px', background: 'rgba(255,215,0,0.15)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255,215,0,0.3)' }}
+              >
+                <i className="fas fa-gem fs-5"></i>
+              </div>
+              <span
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontWeight: 900,
+                  fontStyle: 'italic',
+                  fontSize: '2.4rem',
+                  color: '#fff',
+                  letterSpacing: '-1px',
+                }}
+              >
+                eventease.
+              </span>
             </Link>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
-              Daftarkan akun baru Anda
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: 0 }}>
+              Daftarkan akun baru untuk pengalaman tiket kelas dunia
             </p>
           </div>
 
-          {/* Banner Peringatan Umum */}
+          {/* General Server Error Banner */}
           {generalError && (
             <div
-              className="d-flex align-items-center gap-2 p-3 mb-4 rounded-3"
+              className="d-flex align-items-center gap-2 p-3 mb-4 rounded-3 anim-fade-in"
               style={{
-                background: 'rgba(239, 68, 68, 0.15)',
+                background: 'rgba(239, 68, 68, 0.16)',
                 border: '1px solid #ef4444',
                 color: '#fca5a5',
                 fontSize: '13px',
@@ -255,80 +260,126 @@ export const RegisterPage: React.FC = () => {
           <form onSubmit={handleSubmit} noValidate>
             {/* 1. Nama Lengkap */}
             <div className="mb-3">
-              <label className="kikk-form-label mb-1">Nama Lengkap *</label>
+              <label className="kikk-form-label mb-1">
+                <i className="fas fa-user me-1"></i> Nama Lengkap *
+              </label>
               {renderFieldError('name')}
-              <input
-                type="text"
-                className="kikk-form-control"
-                style={getInputStyle('name')}
-                placeholder="Contoh: Abu Dujanah"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  clearFieldError('name');
-                }}
-              />
+              <div className="position-relative">
+                <input
+                  type="text"
+                  className="kikk-form-control"
+                  style={getInputStyle('name')}
+                  placeholder="Contoh: Abu Dujanah Siregar"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    clearFieldError('name');
+                  }}
+                />
+                <i
+                  className="fas fa-id-card position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
+              </div>
             </div>
 
             {/* 2. Email */}
             <div className="mb-3">
-              <label className="kikk-form-label mb-1">Email *</label>
+              <label className="kikk-form-label mb-1">
+                <i className="fas fa-envelope me-1"></i> Alamat Email *
+              </label>
               {renderFieldError('email')}
-              <input
-                type="email"
-                className="kikk-form-control"
-                style={getInputStyle('email')}
-                placeholder="nama@email.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  clearFieldError('email');
-                }}
-              />
+              <div className="position-relative">
+                <input
+                  type="email"
+                  className="kikk-form-control"
+                  style={getInputStyle('email')}
+                  placeholder="nama@email.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearFieldError('email');
+                  }}
+                />
+                <i
+                  className="fas fa-at position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
+              </div>
             </div>
 
             {/* 3. Nomor WhatsApp / HP */}
             <div className="mb-3">
-              <label className="kikk-form-label mb-1">Nomor WhatsApp / HP *</label>
+              <label className="kikk-form-label mb-1">
+                <i className="fab fa-whatsapp me-1"></i> Nomor WhatsApp / HP *
+              </label>
               {renderFieldError('phone')}
-              <input
-                type="tel"
-                className="kikk-form-control"
-                style={getInputStyle('phone')}
-                placeholder="Contoh: 081234567890 (10-15 digit)"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  clearFieldError('phone');
-                }}
-              />
+              <div className="position-relative">
+                <input
+                  type="tel"
+                  className="kikk-form-control"
+                  style={getInputStyle('phone')}
+                  placeholder="Contoh: 081234567890 (10-15 digit)"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    clearFieldError('phone');
+                  }}
+                />
+                <i
+                  className="fas fa-phone-alt position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
+              </div>
             </div>
 
-            {/* 4. Daftar Sebagai */}
+            {/* 4. Pilihan Role (Visual Cards) */}
             <div className="mb-3">
-              <label className="kikk-form-label mb-1">Daftar Sebagai</label>
-              <select
-                className="kikk-form-control"
-                style={{
-                  borderRadius: '12px',
-                  padding: '12px 16px',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                }}
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="USER" style={{ background: '#0b0616', color: '#fff' }}>
-                  Pembeli Tiket (USER)
-                </option>
-                <option value="ORGANIZER" style={{ background: '#0b0616', color: '#fff' }}>
-                  Penyelenggara Acara (ORGANIZER)
-                </option>
-              </select>
+              <label className="kikk-form-label mb-2">
+                <i className="fas fa-users-cog me-1"></i> Daftar Sebagai
+              </label>
+              <div className="row g-2">
+                <div className="col-6">
+                  <div
+                    onClick={() => setRole('USER')}
+                    className="p-3 rounded-3 text-center cursor-pointer"
+                    style={{
+                      cursor: 'pointer',
+                      background: role === 'USER' ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                      border: role === 'USER' ? '1.5px solid var(--kikk-yellow)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      transition: 'all 0.25s ease',
+                    }}
+                  >
+                    <i className={`fas fa-ticket-alt fs-5 mb-1 ${role === 'USER' ? 'text-warning' : 'text-secondary'}`}></i>
+                    <div className={`fw-bold small ${role === 'USER' ? 'text-white' : 'text-secondary'}`}>Pembeli Tiket</div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>Role: USER</div>
+                  </div>
+                </div>
+
+                <div className="col-6">
+                  <div
+                    onClick={() => setRole('ORGANIZER')}
+                    className="p-3 rounded-3 text-center cursor-pointer"
+                    style={{
+                      cursor: 'pointer',
+                      background: role === 'ORGANIZER' ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                      border: role === 'ORGANIZER' ? '1.5px solid var(--kikk-yellow)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      transition: 'all 0.25s ease',
+                    }}
+                  >
+                    <i className={`fas fa-bullhorn fs-5 mb-1 ${role === 'ORGANIZER' ? 'text-warning' : 'text-secondary'}`}></i>
+                    <div className={`fw-bold small ${role === 'ORGANIZER' ? 'text-white' : 'text-secondary'}`}>Penyelenggara</div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>Role: ORGANIZER</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 5. Kata Sandi */}
             <div className="mb-3">
-              <label className="kikk-form-label mb-1">Kata Sandi *</label>
+              <label className="kikk-form-label mb-1">
+                <i className="fas fa-lock me-1"></i> Kata Sandi *
+              </label>
               {renderFieldError('password')}
               <div className="position-relative">
                 <input
@@ -342,12 +393,16 @@ export const RegisterPage: React.FC = () => {
                     clearFieldError('password');
                   }}
                 />
+                <i
+                  className="fas fa-key position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="btn btn-link position-absolute end-0 top-50 translate-middle-y text-secondary text-decoration-none"
-                  style={{ paddingRight: '15px' }}
-                  title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  style={{ paddingRight: '14px' }}
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                 >
                   <i className={`far ${showPassword ? 'fa-eye-slash text-warning' : 'fa-eye'}`}></i>
                 </button>
@@ -356,7 +411,9 @@ export const RegisterPage: React.FC = () => {
 
             {/* 6. Konfirmasi Kata Sandi */}
             <div className="mb-4">
-              <label className="kikk-form-label mb-1">Konfirmasi Kata Sandi *</label>
+              <label className="kikk-form-label mb-1">
+                <i className="fas fa-check-double me-1"></i> Konfirmasi Kata Sandi *
+              </label>
               {renderFieldError('confirmPassword')}
               <div className="position-relative">
                 <input
@@ -370,12 +427,16 @@ export const RegisterPage: React.FC = () => {
                     clearFieldError('confirmPassword');
                   }}
                 />
+                <i
+                  className="fas fa-shield-alt position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="btn btn-link position-absolute end-0 top-50 translate-middle-y text-secondary text-decoration-none"
-                  style={{ paddingRight: '15px' }}
-                  title={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  style={{ paddingRight: '14px' }}
+                  title={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                 >
                   <i className={`far ${showConfirmPassword ? 'fa-eye-slash text-warning' : 'fa-eye'}`}></i>
                 </button>
@@ -386,23 +447,26 @@ export const RegisterPage: React.FC = () => {
               type="submit"
               disabled={isSubmitting}
               className="btn-kikk w-100 justify-content-center py-3"
-              style={{ fontWeight: 700, borderRadius: '12px' }}
+              style={{ fontWeight: 700, borderRadius: '14px' }}
             >
               {isSubmitting ? (
                 <>
                   <i className="fas fa-spinner fa-spin me-2"></i> MENDAFTARKAN AKUN...
                 </>
               ) : (
-                'BUAT AKUN SEKARANG'
+                <>
+                  <span>BUAT AKUN SEKARANG</span>
+                  <i className="fas fa-user-plus"></i>
+                </>
               )}
             </button>
           </form>
 
-          <div className="text-center mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: 0 }}>
+          <div className="text-center mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', marginBottom: 0 }}>
               Sudah memiliki akun?{' '}
               <Link to="/login" style={{ color: 'var(--kikk-yellow)', fontWeight: 600, textDecoration: 'none' }}>
-                Masuk di Sini
+                Masuk di Sini <i className="fas fa-arrow-right small ms-1"></i>
               </Link>
             </p>
           </div>

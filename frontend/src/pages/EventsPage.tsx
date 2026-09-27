@@ -30,7 +30,7 @@ export const EventsPage: React.FC = () => {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const res = await eventService.getEvents(search, categoryParam, 0, 20);
+        const res = await eventService.getEvents(search, categoryParam, 0, 24);
         setEvents(res.content || []);
       } catch (err) {
         console.error('Failed to load events', err);
@@ -57,197 +57,245 @@ export const EventsPage: React.FC = () => {
     setSearchParams(params);
   };
 
+  const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('musik') || lower.includes('music') || lower.includes('konser')) return 'fa-music';
+    if (lower.includes('teknologi') || lower.includes('tech') || lower.includes('ai')) return 'fa-microchip';
+    if (lower.includes('seni') || lower.includes('art') || lower.includes('desain')) return 'fa-palette';
+    if (lower.includes('bisnis') || lower.includes('business') || lower.includes('startup')) return 'fa-chart-line';
+    if (lower.includes('olahraga') || lower.includes('sport')) return 'fa-running';
+    if (lower.includes('kuliner') || lower.includes('food')) return 'fa-utensils';
+    return 'fa-star';
+  };
+
   return (
-    <div>
-      {/* Header Search */}
+    <div className="position-relative min-vh-100" style={{ backgroundColor: '#0b0616', color: '#fff' }}>
+      {/* Background Geometric Grid Pattern */}
+      <div className="pattern-geometric-overlay" style={{ opacity: 0.25 }}></div>
+
+      {/* Hero Header Section */}
       <div
-        className="section-padding pb-5 kikk-animate fade-in-only"
+        className="position-relative py-5 overflow-hidden"
         style={{
-          background: "url('/images/kikk_hero_stage.jpg') center/cover no-repeat",
-          backgroundBlendMode: 'overlay',
-          backgroundColor: 'rgba(11, 6, 22, 0.8)',
+          background: "linear-gradient(180deg, rgba(11, 6, 22, 0.4) 0%, rgba(11, 6, 22, 0.95) 100%), url('/images/kikk_hero_stage.jpg') center/cover no-repeat",
+          borderBottom: '1px solid rgba(255, 215, 0, 0.1)',
         }}
       >
-        <div className="container text-center position-relative z-1">
-          <div
-            style={{
-              fontSize: '14px',
-              letterSpacing: '2px',
-              color: 'var(--kikk-yellow)',
-              marginBottom: '10px',
-              fontWeight: 600,
-            }}
-          >
-            FIND YOUR NEXT EXPERIENCE
+        <div className="container py-5 text-center position-relative anim-fade-in" style={{ zIndex: 2 }}>
+          <div className="d-inline-flex align-items-center gap-2 mb-3">
+            <span className="gold-glow-badge" style={{ fontSize: '11px', letterSpacing: '2px' }}>
+              <i className="fas fa-sparkles text-warning me-1"></i> CURATED EXPERIENCES • 2026
+            </span>
           </div>
+
           <h1
-            className="kikk-title"
+            className="kikk-title mb-3"
             style={{
-              fontSize: 'clamp(3rem, 6vw, 5rem)',
-              marginBottom: '40px',
+              fontSize: 'clamp(2.5rem, 5.5vw, 4.5rem)',
               textTransform: 'uppercase',
+              letterSpacing: '-1px',
             }}
           >
-            Explore Events
+            Katalog Acara Eksklusif
           </h1>
 
+          <p
+            className="text-secondary mx-auto mb-4"
+            style={{ maxWidth: '620px', fontSize: '1.05rem', lineHeight: 1.6 }}
+          >
+            Temukan tiket resmi festival musik dunia, konferensi teknologi masa depan, dan pameran seni interaktif berkelas internasional.
+          </p>
+
+          {/* Luxury Search Bar */}
           <form
             onSubmit={handleSearchSubmit}
-            className="d-flex justify-content-center mx-auto mb-4"
-            style={{ maxWidth: '700px' }}
+            className="mx-auto mb-4"
+            style={{ maxWidth: '720px' }}
           >
             <div
-              className="input-group shadow-lg"
+              className="d-flex align-items-center p-2 rounded-pill shadow-lg"
               style={{
-                borderRadius: '50px',
-                overflow: 'hidden',
-                border: '1px solid var(--kikk-yellow)',
+                background: 'rgba(15, 10, 30, 0.75)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 215, 0, 0.4)',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.1)',
               }}
             >
-              <span
-                className="input-group-text border-0"
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  color: 'var(--kikk-yellow)',
-                  paddingLeft: '25px',
-                }}
-              >
-                <i className="fas fa-search"></i>
-              </span>
+              <div className="ps-3 text-warning">
+                <i className="fas fa-search fs-5"></i>
+              </div>
               <input
                 type="text"
-                className="form-control border-0 search-input"
-                style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '15px 20px' }}
-                placeholder="Cari nama acara, artis, atau lokasi..."
+                className="form-control border-0 bg-transparent text-white px-3 shadow-none"
+                style={{ fontSize: '15px' }}
+                placeholder="Cari konser, festival, pembicara, atau kota..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
               <button
-                className="btn btn-kikk border-0 btn-search"
+                className="btn-kikk py-2 px-4"
                 type="submit"
-                style={{ borderRadius: 0, margin: 0, padding: '0 40px' }}
+                style={{ borderRadius: '50px', fontSize: '13px', letterSpacing: '1px' }}
               >
-                SEARCH
+                CARI
               </button>
             </div>
           </form>
 
-          {/* Category Filters */}
-          <div className="d-flex flex-wrap justify-content-center gap-3 mt-5">
+          {/* Category Filter Pills */}
+          <div className="d-flex flex-wrap justify-content-center gap-2 mt-4">
             <button
               onClick={() => handleCategoryClick('')}
-              className={selectedCategory === '' ? 'btn-kikk' : 'btn-kikk-outline'}
-              style={{ border: 'none' }}
+              className={`category-pill ${selectedCategory === '' ? 'active' : ''}`}
             >
-              Semua
+              <i className="fas fa-border-all"></i> Semua Acara
             </button>
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className={selectedCategory === cat.id ? 'btn-kikk' : 'btn-kikk-outline'}
-                style={{ border: 'none' }}
+                className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
               >
-                {cat.name}
+                <i className={`fas ${getCategoryIcon(cat.name)}`}></i> {cat.name}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Events Grid */}
-      <div className="section-padding container">
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 kikk-animate stagger-1 gap-3">
-          <h3 className="kikk-title" style={{ fontSize: '2.5rem' }}>
-            Katalog Acara
-          </h3>
-          <div className="d-flex gap-3 align-items-center">
+      {/* Events Grid Section */}
+      <div className="container py-5 position-relative" style={{ zIndex: 1 }}>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="kikk-title m-0" style={{ fontSize: '1.8rem' }}>
+              Daftar Acara ({events.length})
+            </h2>
+            <p className="text-secondary small m-0 mt-1">
+              Pilih acara favorit Anda dan lakukan pemesanan secara instan dengan proteksi calo terintegrasi.
+            </p>
+          </div>
+          {selectedCategory && (
             <button
               onClick={() => handleCategoryClick('')}
-              className="btn-kikk-outline"
-              style={{ padding: '8px 20px', fontSize: '13px' }}
+              className="btn-kikk-outline btn-sm py-1 px-3"
+              style={{ fontSize: '12px' }}
             >
-              Semua
+              <i className="fas fa-times me-1"></i> Reset Kategori
             </button>
-          </div>
+          )}
         </div>
 
         {isLoading ? (
           <div className="text-center py-5">
-            <div className="spinner-border" style={{ color: 'var(--kikk-yellow)' }} role="status">
+            <div className="spinner-border" style={{ color: 'var(--kikk-yellow)', width: '3rem', height: '3rem' }} role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
+            <p className="text-secondary mt-3">Memuat katalog acara eksklusif...</p>
           </div>
-        ) : (
-          <div className="row g-4 mb-5">
-            {events.length > 0 ? (
-              events.map((event) => (
-                <div className="col-lg-4 col-md-6 kikk-animate stagger-2" key={event.id}>
-                  <Link to={`/events/${event.id}`} className="kikk-image-card">
-                    <div className="position-relative">
-                      {event.categoryName && (
-                        <div className="position-absolute top-0 start-0 m-3 z-1">
-                          <span className="badge-kikk">{event.categoryName}</span>
-                        </div>
-                      )}
-                      <img
-                        className="card-img-top"
-                        src={event.imageUrl || '/images/kikk_hero_stage.jpg'}
-                        alt={event.name}
-                      />
+        ) : events.length > 0 ? (
+          <div className="row g-4">
+            {events.map((event, idx) => (
+              <div className="col-lg-4 col-md-6" key={event.id}>
+                <Link
+                  to={`/events/${event.id}`}
+                  className="kikk-image-card anim-fade-in d-flex flex-column h-100"
+                  style={{
+                    animationDelay: `${(idx % 6) * 0.08}s`,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <div className="position-relative overflow-hidden" style={{ height: '230px' }}>
+                    <img
+                      className="card-img-top w-100 h-100"
+                      src={event.imageUrl || '/images/kikk_hero_stage.jpg'}
+                      alt={event.name}
+                      style={{ objectFit: 'cover', transition: 'transform 0.5s ease' }}
+                    />
+                    <div
+                      className="position-absolute top-0 start-0 m-3"
+                      style={{ zIndex: 2 }}
+                    >
+                      <span className="gold-glow-badge" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
+                        <i className="fas fa-crown text-warning me-1"></i> {event.categoryName || 'Eksklusif'}
+                      </span>
                     </div>
-                    <div className="card-body">
-                      <h4 className="card-title">{event.name}</h4>
-                      <p className="card-text">
+                  </div>
+
+                  <div className="card-body p-4 d-flex flex-column flex-grow-1 justify-content-between">
+                    <div>
+                      <h4 className="card-title text-white mb-2 fs-5 fw-bold" style={{ lineHeight: 1.3 }}>
+                        {event.name}
+                      </h4>
+                      <p className="card-text mb-1 text-secondary small">
                         <i className="far fa-calendar-alt text-warning me-2"></i>
                         <span>{event.date}</span>
                       </p>
-                      <p className="card-text">
+                      <p className="card-text mb-3 text-secondary small">
                         <i className="fas fa-map-marker-alt text-warning me-2"></i>
                         <span>{event.location}</span>
                       </p>
-                      <p className="card-text mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                        {event.description?.length > 100
-                          ? event.description.substring(0, 100) + '...'
+                      <p className="card-text text-secondary small" style={{ lineHeight: 1.5, opacity: 0.75 }}>
+                        {event.description?.length > 95
+                          ? event.description.substring(0, 95) + '...'
                           : event.description}
                       </p>
-
-                      <div className="mt-auto pt-4 d-flex justify-content-between align-items-center">
-                        <span
-                          className="badge"
-                          style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            color: '#fff',
-                            padding: '8px 15px',
-                            borderRadius: '5px',
-                          }}
-                        >
-                          Tersedia Tiket
-                        </span>
-                        <span
-                          style={{
-                            color: 'var(--kikk-yellow)',
-                            fontWeight: 600,
-                            fontSize: '14px',
-                          }}
-                        >
-                          DETAIL <i className="fas fa-arrow-right ms-1"></i>
-                        </span>
-                      </div>
                     </div>
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <div className="col-12 text-center py-5 kikk-animate stagger-2">
-                <i
-                  className="fas fa-search-minus mb-3"
-                  style={{ fontSize: '48px', color: 'rgba(255,255,255,0.2)' }}
-                ></i>
-                <h4 style={{ color: 'rgba(255,255,255,0.6)' }}>Tidak ada acara yang ditemukan</h4>
-                <p className="text-muted">Coba gunakan kata kunci pencarian atau kategori lain.</p>
+
+                    <div className="pt-3 border-top d-flex justify-content-between align-items-center mt-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <span
+                        className="badge"
+                        style={{
+                          background: 'rgba(34, 197, 94, 0.12)',
+                          color: '#4ade80',
+                          border: '1px solid rgba(34, 197, 94, 0.25)',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <i className="fas fa-ticket-alt me-1"></i> Tiket Tersedia
+                      </span>
+                      <span
+                        className="text-warning fw-semibold small d-inline-flex align-items-center gap-1"
+                      >
+                        Pesan Tiket <i className="fas fa-arrow-right"></i>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               </div>
-            )}
+            ))}
+          </div>
+        ) : (
+          <div className="luxury-glass-card text-center py-5 px-4 anim-fade-in my-4">
+            <div
+              className="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+              style={{
+                width: '80px',
+                height: '80px',
+                background: 'rgba(255, 215, 0, 0.08)',
+                border: '1px solid rgba(255, 215, 0, 0.2)',
+              }}
+            >
+              <i className="fas fa-search-minus" style={{ fontSize: '32px', color: 'var(--kikk-yellow)' }}></i>
+            </div>
+            <h3 className="kikk-title mb-2 fs-4">Tidak Ada Acara Ditemukan</h3>
+            <p className="text-secondary mx-auto mb-4" style={{ maxWidth: '450px', fontSize: '14px' }}>
+              Tidak ditemukan acara dengan kata kunci atau kategori yang Anda pilih. Coba atur ulang pencarian Anda.
+            </p>
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setSelectedCategory('');
+                setSearchParams({});
+              }}
+              className="btn-kikk px-4 py-2"
+              style={{ borderRadius: '12px', fontSize: '13px' }}
+            >
+              Tampilkan Semua Acara
+            </button>
           </div>
         )}
       </div>

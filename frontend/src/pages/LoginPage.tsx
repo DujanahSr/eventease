@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ export const LoginPage: React.FC = () => {
       Swal.fire({
         icon: 'warning',
         title: 'Input Tidak Lengkap',
-        text: 'Email dan password wajib diisi.',
+        text: 'Email dan kata sandi wajib diisi.',
         confirmButtonColor: '#FFD700',
       });
       return;
@@ -109,7 +110,7 @@ export const LoginPage: React.FC = () => {
       Swal.fire({
         icon: 'error',
         title: 'Login Gagal',
-        text: err.response?.data?.message || 'Email atau password salah.',
+        text: err.response?.data?.message || 'Email atau kata sandi tidak cocok.',
         confirmButtonColor: '#FFD700',
       });
     } finally {
@@ -128,108 +129,164 @@ export const LoginPage: React.FC = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         position: 'relative',
-        padding: '20px',
+        padding: '100px 20px 40px 20px',
       }}
     >
+      {/* Dark Ambient Vignette Overlay */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(circle at center, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.8) 100%)',
+          background: 'radial-gradient(circle at center, rgba(11,6,22,0.45) 0%, rgba(6,3,12,0.88) 100%)',
           zIndex: 1,
         }}
       ></div>
 
       <div
-        className="auth-container"
+        className="auth-container anim-fade-in"
         style={{
           position: 'relative',
           zIndex: 2,
           width: '100%',
-          maxWidth: '450px',
+          maxWidth: '460px',
         }}
       >
         <div
-          className="auth-card"
+          className="luxury-glass-card pattern-wireframe-card"
           style={{
-            background: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(35px)',
-            WebkitBackdropFilter: 'blur(35px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '30px',
-            padding: '50px 40px',
-            boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
+            padding: '45px 38px',
+            border: '1px solid rgba(255, 215, 0, 0.25)',
           }}
         >
+          {/* Header Brand */}
           <div className="auth-header text-center mb-4">
             <Link
               to="/"
-              className="auth-brand"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 900,
-                fontStyle: 'italic',
-                fontSize: '2.5rem',
-                color: '#fff',
-                textDecoration: 'none',
-              }}
+              className="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none"
             >
-              Eventease
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: '42px', height: '42px', background: 'rgba(255,215,0,0.15)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255,215,0,0.3)' }}
+              >
+                <i className="fas fa-gem fs-5"></i>
+              </div>
+              <span
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontWeight: 900,
+                  fontStyle: 'italic',
+                  fontSize: '2.4rem',
+                  color: '#fff',
+                  letterSpacing: '-1px',
+                }}
+              >
+                eventease.
+              </span>
             </Link>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Masuk untuk mengakses akun Anda</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: 0 }}>
+              Masuk untuk mengakses tiket & dasbor Anda
+            </p>
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* Email Field */}
             <div className="mb-3">
-              <label className="kikk-form-label">Email</label>
-              <input
-                type="email"
-                className="kikk-form-control"
-                placeholder="nama@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <label className="kikk-form-label">
+                <i className="fas fa-envelope me-1"></i> Alamat Email
+              </label>
+              <div className="position-relative">
+                <input
+                  type="email"
+                  className="kikk-form-control"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="nama@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <i
+                  className="fas fa-at position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
+              </div>
             </div>
 
+            {/* Password Field */}
             <div className="mb-4">
-              <label className="kikk-form-label">Password</label>
-              <input
-                type="password"
-                className="kikk-form-control"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="kikk-form-label mb-0">
+                  <i className="fas fa-lock me-1"></i> Kata Sandi
+                </label>
+              </div>
+              <div className="position-relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="kikk-form-control"
+                  style={{ paddingLeft: '42px', paddingRight: '45px' }}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <i
+                  className="fas fa-key position-absolute top-50 translate-middle-y text-secondary"
+                  style={{ left: '16px', fontSize: '0.9rem' }}
+                ></i>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn btn-link position-absolute end-0 top-50 translate-middle-y text-secondary text-decoration-none"
+                  style={{ paddingRight: '14px' }}
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                >
+                  <i className={`far ${showPassword ? 'fa-eye-slash text-warning' : 'fa-eye'}`}></i>
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
               className="btn-kikk w-100 justify-content-center py-3"
-              style={{ fontWeight: 700 }}
+              style={{ fontWeight: 700, borderRadius: '14px' }}
             >
-              {isSubmitting ? 'MEMPROSES...' : 'MASUK KE AKUN'}
+              {isSubmitting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin me-2"></i> MEMVERIFIKASI...
+                </>
+              ) : (
+                <>
+                  <span>MASUK KE AKUN</span>
+                  <i className="fas fa-sign-in-alt"></i>
+                </>
+              )}
             </button>
           </form>
 
           {/* Google Sign In Divider & Button */}
           <div className="d-flex align-items-center my-4">
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }}></div>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', padding: '0 15px', letterSpacing: '1px' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }}></div>
+            <span
+              style={{
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: '0.75rem',
+                padding: '0 12px',
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+              }}
+            >
               ATAU MASUK DENGAN
             </span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }}></div>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }}></div>
           </div>
 
           <div id="googleSignInBtn" className="d-flex justify-content-center w-100" style={{ minHeight: '44px' }}></div>
 
-          <div className="text-center mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: 0 }}>
-              Belum punya akun?{' '}
+          <div className="text-center mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', marginBottom: 0 }}>
+              Belum memiliki akun?{' '}
               <Link to="/register" style={{ color: 'var(--kikk-yellow)', fontWeight: 600, textDecoration: 'none' }}>
-                Daftar Sekarang
+                Daftar Akun Baru <i className="fas fa-arrow-right small ms-1"></i>
               </Link>
             </p>
           </div>
