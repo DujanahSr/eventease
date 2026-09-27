@@ -14,6 +14,31 @@ jobs:
     name: Backend Test & Build (Java 21)
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: eventease_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: DujanahSr07
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -29,6 +54,13 @@ jobs:
         run: chmod +x mvnw
 
       - name: Run Unit Tests (JUnit 5 + Mockito)
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/eventease_db
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: DujanahSr07
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
         run: ./mvnw clean test
 
       - name: Build Production JAR
