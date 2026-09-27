@@ -30,14 +30,18 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
         
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        if (request.getRequestURI().startsWith("/api")) {
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        ApiErrorResponse errorResponse = ApiErrorResponse.of(
-                HttpStatus.UNAUTHORIZED.value(),
-                "Akses tidak diizinkan. Silakan login terlebih dahulu atau sertakan Bearer Token yang valid."
-        );
+            ApiErrorResponse errorResponse = ApiErrorResponse.of(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Akses tidak diizinkan. Silakan login terlebih dahulu atau sertakan Bearer Token yang valid."
+            );
 
-        response.getOutputStream().println(objectMapper.writeValueAsString(errorResponse));
+            response.getOutputStream().println(objectMapper.writeValueAsString(errorResponse));
+        } else {
+            response.sendRedirect(request.getContextPath() + "/login");
+        }
     }
 }

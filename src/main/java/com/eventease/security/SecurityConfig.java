@@ -44,8 +44,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthEntryPoint)
                 )
                 .sessionManagement(session -> session
-                        // Stateless for modern decoupled REST API
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // IF_REQUIRED allows HttpSession for Thymeleaf while /api remains stateless JWT
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Public REST API endpoints

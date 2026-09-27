@@ -106,39 +106,8 @@ services:
       - uploads_data:/app/uploads
     networks:
       - eventease_net
-    expose:
-      - "8081"
-
-  # =========================================================================
-  # Frontend Decoupled SPA Service: React + Vite + Tailwind CSS
-  # =========================================================================
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: eventease-frontend
-    restart: unless-stopped
-    networks:
-      - eventease_net
-    expose:
-      - "80"
-
-  # =========================================================================
-  # Edge Reverse Proxy: Nginx Alpine
-  # =========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: eventease-nginx
-    restart: unless-stopped
     ports:
-      - "${PORT:-80}:80"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - eventease_net
+      - "${PORT:-8081}:8081"
 
 # =========================================================================
 # Persistent Volumes & Network Definitions
