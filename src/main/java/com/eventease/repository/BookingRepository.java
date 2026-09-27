@@ -54,6 +54,8 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     boolean existsByTicketCategoryEventIdAndTicketCategoryEventOrganizer(String eventId, Akun organizer);
     List<Booking> findByTicketCategoryEventOrganizerOrderByEventDateAsc(Akun organizer);
     Page<Booking> findByTicketCategoryEventOrganizerOrderByEventDateAsc(Akun organizer, Pageable pageable);
+    List<Booking> findByTicketCategoryEventId(String eventId);
+    List<Booking> findByTicketCategoryEventIdAndTicketCategoryEventOrganizer(String eventId, Akun organizer);
     
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT b.user.id) FROM Booking b WHERE b.ticketCategory.event.organizer = :organizer")
     Long countDistinctUsersByOrganizer(@org.springframework.data.repository.query.Param("organizer") Akun organizer);

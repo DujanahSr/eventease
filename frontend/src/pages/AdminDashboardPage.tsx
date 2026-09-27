@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventService } from '../services/eventService';
+import { bookingService, triggerFileDownload } from '../services/bookingService';
 import { EventSummary, Category } from '../types';
+import Swal from 'sweetalert2';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<EventSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -29,6 +32,44 @@ export const AdminDashboardPage: React.FC = () => {
     fetchAdminData();
   }, []);
 
+  const handleExportExcel = async (eventId?: string, eventName?: string) => {
+    setIsExporting(true);
+    try {
+      Swal.fire({
+        title: 'Mempersiapkan Dokumen Excel...',
+        text: 'Mengonsolidasikan transaksi tiket dengan format Apache POI...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const blob = await bookingService.exportBookingsExcel(eventId);
+      const filename = eventName
+        ? `Laporan_Admin_${eventName.replace(/\s+/g, '_')}.xlsx`
+        : `Laporan_Konsolidasi_Penjualan_Platform_${Date.now()}.xlsx`;
+
+      triggerFileDownload(blob, filename);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Berhasil!',
+        text: `File ${filename} berhasil diunduh.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error('Gagal mengekspor laporan Excel:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor Excel',
+        text: 'Terjadi kesalahan saat mengekspor laporan penjualan tiket platform.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="section-padding container">
       {/* Header Profile Greeting */}
@@ -41,6 +82,18 @@ export const AdminDashboardPage: React.FC = () => {
           <p style={{ color: 'rgba(255,255,255,0.6)', margin: '5px 0 0 0' }}>
             Login sebagai: {user?.name} ({user?.email})
           </p>
+        </div>
+        <div className="d-flex gap-3 mt-4 mt-md-0">
+          <button
+            onClick={() => handleExportExcel()}
+            disabled={isExporting}
+            className="btn-kikk-outline"
+            style={{ borderColor: '#22c55e', color: '#22c55e' }}
+            title="Unduh laporan penjualan konsolidasi seluruh platform (.xlsx)"
+          >
+            <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'} me-2`}></i>
+            Unduh Laporan Konsolidasi (.xlsx)
+          </button>
         </div>
       </div>
 
@@ -94,7 +147,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <th>KATEGORI</th>
                   <th>TANGGAL</th>
                   <th>ORGANIZER</th>
-                  <th className="text-end">AKSI</th>
+                  <th className="text-end">AKSI & LAPORAN</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,9 +158,19 @@ export const AdminDashboardPage: React.FC = () => {
                     <td>{e.date}</td>
                     <td style={{ color: 'rgba(255,255,255,0.7)' }}>{e.organizerName || 'Eventease Official'}</td>
                     <td className="text-end">
-                      <Link to={`/events/${e.id}`} className="btn-kikk btn-sm py-1 px-3" style={{ fontSize: '12px' }}>
-                        Lihat
-                      </Link>
+                      <div className="d-flex justify-content-end gap-2">
+                        <button
+                          onClick={() => handleExportExcel(e.id, e.name)}
+                          className="btn-kikk-outline btn-sm py-1 px-2"
+                          style={{ fontSize: '11px', borderColor: '#22c55e', color: '#22c55e' }}
+                          title="Unduh laporan penjualan acara ini (.xlsx)"
+                        >
+                          <i className="fas fa-file-excel me-1"></i> Excel
+                        </button>
+                        <Link to={`/events/${e.id}`} className="btn-kikk btn-sm py-1 px-3" style={{ fontSize: '12px' }}>
+                          Lihat
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

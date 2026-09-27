@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.eventease.common.ApiResponse;
 import com.eventease.dto.booking.BookingRequestDto;
 import com.eventease.dto.booking.BookingResponseDto;
+import com.eventease.ratelimit.RateLimited;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.api.BookingApiService;
 
@@ -22,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Tag(name = "4. Pemesanan & Tiket", description = "Reservasi tiket, integrasi Snap Midtrans, tiket saya, dan unduh PDF")
+@Tag(name = "4. Pemesanan & Tiket", description = "Reservasi tiket, integrasi Snap Midtrans, tiket saya, unduh PDF, dan ekspor laporan Excel")
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
@@ -30,7 +31,8 @@ public class BookingRestController {
 
     private final BookingApiService bookingApiService;
 
-    @Operation(summary = "Pesan Tiket Acara", description = "Membuat pesanan tiket baru dan mengembalikan token Snap Midtrans untuk pembayaran.")
+    @Operation(summary = "Pesan Tiket Acara (Anti-Bot Rate Limited)", description = "Membuat pesanan tiket baru. Dilindungi rate limit 5 req/menit per IP untuk mencegah bot/calo tiket.")
+    @RateLimited(key = "booking", limit = 5, duration = 60, message = "Batas transaksi tercapai. Anda hanya dapat melakukan 5 permintaan pemesanan tiket per menit untuk mencegah calo/bot.")
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponseDto>> createBooking(
             @Valid @RequestBody BookingRequestDto requestDto,
@@ -75,5 +77,24 @@ public class BookingRestController {
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Ekspor Laporan Penjualan Tiket ke Excel (.xlsx)", description = "Menghasilkan dan mengunduh laporan penjualan tiket format Microsoft Excel (Apache POI). Khusus Penyelenggara & Admin.")
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportBookingsExcel(
+            @RequestParam(required = false) String eventId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Unduh laporan penjualan Excel oleh: {}, eventId: {}", userPrincipal.getUsername(), eventId);
+        byte[] excelBytes = bookingApiService.exportBookingsExcel(eventId, userPrincipal);
+
+        String filename = "Laporan_Penjualan_Eventease_" + System.currentTimeMillis() + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
     }
 }

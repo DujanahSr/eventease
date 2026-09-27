@@ -60,6 +60,12 @@ class BookingApiServiceTest {
     @Mock
     private WebSocketNotificationService webSocketNotificationService;
 
+    @Mock
+    private com.eventease.service.export.ExcelExportService excelExportService;
+
+    @Mock
+    private com.eventease.repository.EventRepository eventRepository;
+
     @InjectMocks
     private BookingApiServiceImpl bookingApiService;
 
@@ -210,5 +216,39 @@ class BookingApiServiceTest {
         assertEquals("booking-001", result.get(0).getId());
         assertEquals("Jakarta Tech Expo 2026", result.get(0).getEventName());
         verify(bookingRepository, times(1)).findByUser(dummyUser);
+    }
+
+    @Test
+    @DisplayName("Ekspor Excel: Organizer berhasil mengunduh laporan penjualan acaranya")
+    void testExportBookingsExcel_OrganizerSuccess() throws Exception {
+        Booking booking = new Booking();
+        booking.setId("booking-exp-01");
+        booking.setUser(dummyUser);
+        booking.setTicketCategory(dummyTicketCategory);
+        booking.setStatus(Booking.Status.PAID);
+        booking.setParticipants(2);
+
+        byte[] fakeExcel = new byte[]{1, 2, 3, 4};
+
+        when(bookingRepository.findByTicketCategoryEventOrganizerOrderByEventDateAsc(dummyOrganizer))
+                .thenReturn(List.of(booking));
+        when(excelExportService.exportBookingsReport(anyString(), anyList()))
+                .thenReturn(fakeExcel);
+
+        byte[] result = bookingApiService.exportBookingsExcel(null, dummyOrganizerPrincipal);
+
+        assertNotNull(result);
+        assertEquals(4, result.length);
+        verify(bookingRepository, times(1)).findByTicketCategoryEventOrganizerOrderByEventDateAsc(dummyOrganizer);
+        verify(excelExportService, times(1)).exportBookingsReport(anyString(), anyList());
+    }
+
+    @Test
+    @DisplayName("Ekspor Excel: Role USER biasa ditolak dengan ForbiddenException")
+    void testExportBookingsExcel_UserForbidden() {
+        assertThrows(com.eventease.exception.ForbiddenException.class, () -> {
+            bookingApiService.exportBookingsExcel(null, dummyUserPrincipal);
+        });
+        verify(bookingRepository, never()).findAll();
     }
 }

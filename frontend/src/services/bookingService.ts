@@ -40,4 +40,25 @@ export const bookingService = {
     const res = await api.get<ApiResponse<BookingResponseData>>(`/bookings/${id}`);
     return res.data.data;
   },
+
+  async exportBookingsExcel(eventId?: string): Promise<Blob> {
+    const params = eventId ? { eventId } : {};
+    const res = await api.get('/bookings/export/excel', {
+      params,
+      responseType: 'blob',
+    });
+    return res.data;
+  },
 };
+
+export const triggerFileDownload = (blob: Blob, defaultFilename: string) => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = defaultFilename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+

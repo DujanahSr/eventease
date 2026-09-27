@@ -54,6 +54,9 @@ public class WebSocketNotificationService {
             String adminTopic = "/topic/admin/check-in";
             messagingTemplate.convertAndSend(adminTopic, payload);
 
+            // 3. Broadcast ke channel umum /topic/check-in
+            messagingTemplate.convertAndSend("/topic/check-in", payload);
+
         } catch (Exception ex) {
             log.warn("Gagal menyiarkan notifikasi WebSocket: {}", ex.getMessage());
         }

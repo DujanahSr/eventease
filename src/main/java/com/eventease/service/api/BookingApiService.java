@@ -15,4 +15,5 @@ public interface BookingApiService {
     byte[] getTicketPdf(String bookingId, UserPrincipal userPrincipal);
     TicketValidationResponseDto validateAndCheckInTicket(String bookingId, UserPrincipal userPrincipal);
     boolean processPaymentWebhook(Map<String, Object> payload);
+    byte[] exportBookingsExcel(String eventId, UserPrincipal userPrincipal);
 }

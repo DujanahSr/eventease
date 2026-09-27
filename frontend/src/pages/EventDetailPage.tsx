@@ -121,12 +121,21 @@ export const EventDetailPage: React.FC = () => {
         });
       }
     } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Memesan Tiket',
-        text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-        confirmButtonColor: '#FFD700',
-      });
+      if (err.response?.status === 429) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Proteksi Anti-Bot & Calo Aktif',
+          text: err.response?.data?.message || 'Batas transaksi tercapai. Anda hanya dapat melakukan 5 permintaan pemesanan tiket per menit untuk mencegah bot/calo tiket.',
+          confirmButtonColor: '#FFD700',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Memesan Tiket',
+          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
+          confirmButtonColor: '#FFD700',
+        });
+      }
     } finally {
       setIsProcessing(false);
     }

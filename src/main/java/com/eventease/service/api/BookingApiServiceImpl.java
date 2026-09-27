@@ -17,17 +17,21 @@ import com.eventease.dto.booking.TicketValidationResponseDto;
 import com.eventease.exception.BadRequestException;
 import com.eventease.exception.ForbiddenException;
 import com.eventease.exception.ResourceNotFoundException;
+import com.eventease.exception.UnauthorizedException;
 import com.eventease.model.Akun;
 import com.eventease.model.Booking;
+import com.eventease.model.Event;
 import com.eventease.model.Payment;
 import com.eventease.model.TicketCategory;
 import com.eventease.repository.BookingRepository;
+import com.eventease.repository.EventRepository;
 import com.eventease.repository.PaymentRepository;
 import com.eventease.repository.TicketCategoryRepository;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.EmailService;
 import com.eventease.service.MidtransService;
 import com.eventease.service.PdfService;
+import com.eventease.service.export.ExcelExportService;
 import com.eventease.util.MidtransSignatureVerifier;
 
 import lombok.RequiredArgsConstructor;
@@ -40,10 +44,12 @@ public class BookingApiServiceImpl implements BookingApiService {
 
     private final BookingRepository bookingRepository;
     private final TicketCategoryRepository ticketCategoryRepository;
+    private final EventRepository eventRepository;
     private final PaymentRepository paymentRepository;
     private final MidtransService midtransService;
     private final PdfService pdfService;
     private final EmailService emailService;
+    private final ExcelExportService excelExportService;
     private final com.eventease.messaging.producer.TicketFulfillmentProducer ticketFulfillmentProducer;
     private final com.eventease.websocket.service.WebSocketNotificationService webSocketNotificationService;
 
@@ -213,8 +219,16 @@ public class BookingApiServiceImpl implements BookingApiService {
             return false;
         }
 
-        // 2. Ekstrak real bookingId (format: bookingId-timestamp)
-        String realBookingId = orderId.split("-")[0];
+        // 2. Ekstrak real bookingId (mendukung format UUID 36-karakter atau bookingId_timestamp)
+        String realBookingId = orderId;
+        if (bookingRepository.findById(orderId).isPresent()) {
+            realBookingId = orderId;
+        } else if (orderId.contains("_")) {
+            realBookingId = orderId.substring(0, orderId.indexOf('_'));
+        } else if (orderId.length() >= 36 && bookingRepository.findById(orderId.substring(0, 36)).isPresent()) {
+            realBookingId = orderId.substring(0, 36);
+        }
+
         Booking booking = bookingRepository.findById(realBookingId).orElse(null);
         if (booking == null) {
             log.warn("Pesanan dengan ID: {} tidak ditemukan", realBookingId);
@@ -294,6 +308,53 @@ public class BookingApiServiceImpl implements BookingApiService {
 
         if (!isAdmin && !isBuyer && !isOrganizer) {
             throw new ForbiddenException("Akses ditolak: Anda tidak memiliki izin untuk melihat pesanan tiket ini.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportBookingsExcel(String eventId, UserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new UnauthorizedException("Autentikasi diperlukan untuk mengunduh laporan penjualan");
+        }
+
+        String role = userPrincipal.getRole() != null ? userPrincipal.getRole().toUpperCase() : "USER";
+        if (!role.contains("ADMIN") && !role.contains("ORGANIZER")) {
+            throw new ForbiddenException("Hanya Penyelenggara Acara atau Admin yang diizinkan mengunduh laporan penjualan.");
+        }
+
+        List<Booking> bookings;
+        String reportTitle;
+
+        if (role.contains("ORGANIZER")) {
+            Akun organizer = userPrincipal.getAkun();
+            if (eventId != null && !eventId.isBlank()) {
+                Event event = eventRepository.findById(eventId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+                bookings = bookingRepository.findByTicketCategoryEventIdAndTicketCategoryEventOrganizer(eventId, organizer);
+                reportTitle = "Laporan Penjualan Tiket - " + event.getName();
+            } else {
+                bookings = bookingRepository.findByTicketCategoryEventOrganizerOrderByEventDateAsc(organizer);
+                reportTitle = "Laporan Penjualan Tiket Seluruh Acara - " + organizer.getName();
+            }
+        } else {
+            // Role ADMIN
+            if (eventId != null && !eventId.isBlank()) {
+                Event event = eventRepository.findById(eventId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+                bookings = bookingRepository.findByTicketCategoryEventId(eventId);
+                reportTitle = "Laporan Penjualan Tiket - " + event.getName();
+            } else {
+                bookings = bookingRepository.findAll();
+                reportTitle = "Laporan Konsolidasi Penjualan Seluruh Acara - Eventease Platform";
+            }
+        }
+
+        try {
+            return excelExportService.exportBookingsReport(reportTitle, bookings);
+        } catch (Exception ex) {
+            log.error("Gagal menghasilkan file Excel laporan penjualan: ", ex);
+            throw new RuntimeException("Gagal mengekspor laporan ke Excel: " + ex.getMessage(), ex);
         }
     }
 }

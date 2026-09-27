@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eventease.common.ApiResponse;
@@ -30,19 +31,34 @@ public class ScannerRestController {
     private final BookingApiService bookingApiService;
 
     @Operation(summary = "Pindai & Validasi Tiket", description = "Memverifikasi keabsahan QR code tiket dan menandai status tiket menjadi CHECKED_IN.")
-    @PostMapping("/verify")
+    @PostMapping({"/verify", "/validate"})
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<TicketValidationResponseDto>> verifyAndCheckInTicket(
-            @Valid @RequestBody TicketValidationRequestDto requestDto,
+            @RequestBody(required = false) TicketValidationRequestDto requestDto,
+            @RequestParam(name = "code", required = false) String codeParam,
+            @RequestParam(name = "bookingId", required = false) String bookingIdParam,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-        log.info("API Request: Pindai & verifikasi QR code tiket: {} oleh organizer: {}", requestDto.getBookingId(), userPrincipal.getUsername());
-        TicketValidationResponseDto result = bookingApiService.validateAndCheckInTicket(requestDto.getBookingId(), userPrincipal);
+        String bookingId = null;
+        if (requestDto != null && requestDto.getBookingId() != null && !requestDto.getBookingId().isBlank()) {
+            bookingId = requestDto.getBookingId();
+        } else if (codeParam != null && !codeParam.isBlank()) {
+            bookingId = codeParam;
+        } else if (bookingIdParam != null && !bookingIdParam.isBlank()) {
+            bookingId = bookingIdParam;
+        }
+
+        if (bookingId == null || bookingId.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Kode tiket atau booking ID tidak boleh kosong"));
+        }
+
+        log.info("API Request: Pindai & verifikasi QR code tiket: {} oleh: {}", bookingId, userPrincipal.getUsername());
+        TicketValidationResponseDto result = bookingApiService.validateAndCheckInTicket(bookingId, userPrincipal);
 
         if (result.isValid()) {
             return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
         } else {
-            return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(result.getMessage()));
         }
     }
 }
