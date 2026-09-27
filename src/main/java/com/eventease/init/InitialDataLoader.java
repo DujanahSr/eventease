@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.eventease.constant.RoleConstants;
 import com.eventease.model.Akun;
@@ -33,6 +34,7 @@ public class InitialDataLoader implements ApplicationRunner {
     private final TicketCategoryRepository ticketCategoryRepository;
 
     @Override
+    @Transactional
     public void run(ApplicationArguments args) throws Exception {
         // 1. Inisialisasi Role Sistem
         initRoles();
