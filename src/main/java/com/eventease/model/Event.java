@@ -34,7 +34,7 @@ public class Event {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "organizer_id", referencedColumnName = "user_id", nullable = true)
     private Akun organizer;
 
