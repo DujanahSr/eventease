@@ -1,28 +1,32 @@
 package com.eventease.controller.api;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.eventease.common.ApiResponse;
-import com.eventease.exception.BadRequestException;
-import com.eventease.service.CloudinaryService;
+import com.eventease.dto.media.UploadResultDto;
+import com.eventease.service.media.CloudinaryService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Tag(name = "10. Media & Cloudinary Storage", description = "Upload file gambar, poster acara, dan foto profil ke CDN Cloudinary")
+@Tag(name = "10. Media & Cloudinary Storage", description = "Upload file gambar, poster acara, dan foto profil ke CDN Cloudinary dengan fallback Local Storage")
 @RestController
 @RequestMapping("/api/media")
 @RequiredArgsConstructor
@@ -30,48 +34,52 @@ public class MediaRestController {
 
     private final CloudinaryService cloudinaryService;
 
-    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
-            "image/jpeg", "image/png", "image/webp", "image/gif", "image/jpg"
-    );
-
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-    @Operation(summary = "Upload Gambar ke Cloudinary CDN", description = "Mengunggah file gambar (JPEG, PNG, WebP) ke Cloudinary dan mengembalikan secure HTTPS URL.")
+    @Operation(
+            summary = "Upload Gambar ke Cloudinary CDN / Local Storage",
+            description = "Mengunggah file gambar (JPEG, PNG, WebP) ke Cloudinary jika terkonfigurasi, atau secara otomatis fallback ke Local Storage. Maksimal ukuran 5MB."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Gambar berhasil diunggah"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Format gambar tidak didukung atau ukuran melebihi batas"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Akses ditolak")
+    })
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> uploadImage(
+    public ResponseEntity<ApiResponse<UploadResultDto>> uploadImage(
+            @Parameter(description = "Berkas gambar (JPG, PNG, WebP)", required = true)
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folder", defaultValue = "eventease/events") String folder) {
+            @Parameter(description = "Folder tujuan (misal: 'events', 'avatars', 'banners')")
+            @RequestParam(value = "folder", defaultValue = "events") String folder) {
 
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("File gambar tidak boleh kosong");
-        }
+        log.info("API Request: Mengunggah gambar ke folder '{}', ukuran: {} bytes", folder, file.getSize());
+        UploadResultDto result = cloudinaryService.uploadImage(file, folder);
 
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new BadRequestException("Ukuran gambar melebihi batas maksimal 10MB");
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Gambar berhasil diunggah", result));
+    }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
-            throw new BadRequestException("Format gambar tidak didukung. Harap gunakan format JPG, PNG, atau WebP.");
-        }
+    @Operation(summary = "Hapus Berkas Gambar", description = "Menghapus gambar dari Cloudinary CDN atau Local Storage berdasarkan public_id.")
+    @DeleteMapping
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteImage(
+            @Parameter(description = "Public ID gambar", required = true)
+            @RequestParam("publicId") String publicId) {
 
-        try {
-            log.info("Mengunggah gambar: {} ({} bytes) ke folder: {}", file.getOriginalFilename(), file.getSize(), folder);
-            String secureUrl = cloudinaryService.uploadImage(file, folder);
+        log.info("API Request: Hapus gambar publicId={}", publicId);
+        cloudinaryService.deleteImage(publicId);
 
-            Map<String, Object> result = Map.of(
-                    "url", secureUrl,
-                    "filename", file.getOriginalFilename() != null ? file.getOriginalFilename() : "image",
-                    "size", file.getSize(),
-                    "contentType", contentType
-            );
+        return ResponseEntity.ok(ApiResponse.success("Gambar berhasil dihapus", null));
+    }
 
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Gambar berhasil diunggah ke Cloudinary", result));
-        } catch (IOException e) {
-            log.error("Gagal mengunggah gambar ke Cloudinary: {}", e.getMessage(), e);
-            throw new BadRequestException("Gagal mengunggah file ke Cloudinary: " + e.getMessage());
-        }
+    @Operation(summary = "Status Layanan Penyimpanan Media", description = "Mengecek apakah penyimpanan menggunakan Cloudinary CDN atau fallback Local Storage.")
+    @GetMapping("/status")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStorageStatus() {
+        boolean isCloudinary = cloudinaryService.isCloudinaryConfigured();
+        Map<String, Object> status = Map.of(
+                "provider", isCloudinary ? "CLOUDINARY" : "LOCAL_STORAGE",
+                "isCloudinaryActive", isCloudinary,
+                "maxFileSize", "5MB",
+                "allowedFormats", "JPG, PNG, WebP, GIF"
+        );
+        return ResponseEntity.ok(ApiResponse.success("Status penyimpanan media", status));
     }
 }

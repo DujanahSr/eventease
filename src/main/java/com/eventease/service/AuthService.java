@@ -12,4 +12,6 @@ public interface AuthService {
     AuthResponseDto refreshToken(RefreshTokenDto tokenDto);
     AuthResponseDto loginWithGoogle(String credential);
     UserDto getCurrentUser(String email);
+    UserDto updateProfile(String email, com.eventease.dto.auth.UpdateProfileDto updateDto);
 }
+

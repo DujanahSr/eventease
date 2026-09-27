@@ -65,9 +65,24 @@ export const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <li className="nav-item">
-                  <Link className="nav-link" to={getDashboardPath()}>
-                    Dashboard
+                <li className="nav-item ms-lg-2">
+                  <Link to={getDashboardPath()} className="nav-link d-flex align-items-center gap-2 py-1" style={{ color: '#fff' }}>
+                    {user?.profilePicture ? (
+                      <img
+                        src={user.profilePicture}
+                        alt={user.name}
+                        className="rounded-circle"
+                        style={{ width: '30px', height: '30px', objectFit: 'cover', border: '1.5px solid var(--kikk-yellow)' }}
+                      />
+                    ) : (
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold"
+                        style={{ width: '30px', height: '30px', fontSize: '13px' }}
+                      >
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                    <span>{user?.name?.split(' ')[0]}</span>
                   </Link>
                 </li>
                 <li className="nav-item ms-lg-3">

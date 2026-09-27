@@ -55,7 +55,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/favicon.ico",
-                                "/images/**"
+                                "/images/**",
+                                "/uploads/**"
                         ).permitAll()
 
                         // Public REST API endpoints

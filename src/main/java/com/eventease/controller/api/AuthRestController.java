@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,6 +76,16 @@ public class AuthRestController {
         log.info("API Request: Get profile for current authenticated user");
         UserDto userDto = authService.getCurrentUser(userPrincipal.getUsername());
         return ResponseEntity.ok(ApiResponse.success("Data profil berhasil diambil", userDto));
+    }
+
+    @Operation(summary = "Perbarui Profil Pengguna", description = "Memperbarui nama, nomor telepon, dan URL foto profil akun pengguna yang sedang login.")
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserDto>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody com.eventease.dto.auth.UpdateProfileDto updateDto) {
+        log.info("API Request: Update profile for user {}", userPrincipal.getUsername());
+        UserDto updatedUser = authService.updateProfile(userPrincipal.getUsername(), updateDto);
+        return ResponseEntity.ok(ApiResponse.success("Profil berhasil diperbarui", updatedUser));
     }
 
     @Operation(summary = "Logout Pengguna", description = "Memasukkan JWT token ke Redis Blacklist sehingga tidak dapat digunakan kembali.")

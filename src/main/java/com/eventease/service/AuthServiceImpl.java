@@ -139,6 +139,32 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public UserDto updateProfile(String email, com.eventease.dto.auth.UpdateProfileDto updateDto) {
+        Akun akun = akunRepository.findByEmail(email);
+        if (akun == null) {
+            akun = akunRepository.findUserByEmail(email);
+        }
+        if (akun == null) {
+            throw new ResourceNotFoundException("Pengguna", "email", email);
+        }
+
+        if (updateDto.getName() != null && !updateDto.getName().isBlank()) {
+            akun.setName(updateDto.getName().trim());
+        }
+        if (updateDto.getPhone() != null) {
+            akun.setPhone(updateDto.getPhone().trim());
+        }
+        if (updateDto.getProfilePicture() != null && !updateDto.getProfilePicture().isBlank()) {
+            akun.setProfilePicture(updateDto.getProfilePicture().trim());
+        }
+
+        Akun saved = akunRepository.save(akun);
+        log.info("Profil pengguna berhasil diperbarui: email={}, nama={}", email, saved.getName());
+        return UserDto.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional
     public AuthResponseDto loginWithGoogle(String credential) {
         log.info("Memproses autentikasi Google Identity Services");
         try {

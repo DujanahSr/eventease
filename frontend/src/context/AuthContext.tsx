@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<User>;
   loginWithGoogle: (credential: string) => Promise<User>;
+  updateProfile: (data: { name?: string; phone?: string; profilePicture?: string }) => Promise<User>;
   logout: () => void;
 }
 
@@ -59,6 +60,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authData.user;
   };
 
+  const updateProfile = async (data: { name?: string; phone?: string; profilePicture?: string }): Promise<User> => {
+    const updated = await authService.updateProfile(data);
+    setUser(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+    return updated;
+  };
+
   const logout = () => {
     authService.logout();
     setToken(null);
@@ -74,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         loginWithGoogle,
+        updateProfile,
         logout,
       }}
     >

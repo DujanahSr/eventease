@@ -43,6 +43,11 @@ export const authService = {
     return res.data.data;
   },
 
+  async updateProfile(data: { name?: string; phone?: string; profilePicture?: string }): Promise<User> {
+    const res = await api.put<ApiResponse<User>>('/auth/me', data);
+    return res.data.data;
+  },
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
