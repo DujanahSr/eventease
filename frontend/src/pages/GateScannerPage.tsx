@@ -25,72 +25,91 @@ export const GateScannerPage: React.FC = () => {
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
-  // Jalankan kamera saat tab 'camera' aktif
+  // Bersihkan kamera saat unmount
   useEffect(() => {
-    let isMounted = true;
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
-    if (activeTab === 'camera') {
-      setCameraError(null);
+  const stopCamera = async () => {
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
+          await scannerRef.current.stop();
+        }
+      } catch (err) {
+        console.warn('Gagal menghentikan scanner:', err);
+      }
+
+      try {
+        scannerRef.current.clear();
+      } catch (err) {
+        console.warn('Gagal membersihkan kontainer scanner:', err);
+      }
+
+      scannerRef.current = null;
+      setIsCameraActive(false);
+    }
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      await stopCamera();
+
       const scanner = new Html5Qrcode('camera-scanner-box');
       scannerRef.current = scanner;
 
-      scanner
-        .start(
-          { facingMode: 'environment' },
-          {
-            fps: 10,
-            qrbox: { width: 240, height: 240 },
-          },
-          (decodedText) => {
-            if (!isMounted) return;
-            scanner
-              .stop()
-              .then(() => {
-                if (isMounted) setIsCameraActive(false);
-                handleVerify(decodedText);
-              })
-              .catch(() => {
-                if (isMounted) setIsCameraActive(false);
-                handleVerify(decodedText);
-              });
-          },
-          () => {
-            // Frame scan loop - abaikan saat QR belum masuk frame
-          }
-        )
-        .then(() => {
-          if (isMounted) setIsCameraActive(true);
-        })
-        .catch((err) => {
-          console.warn('Kamera error:', err);
-          if (isMounted) {
-            setIsCameraActive(false);
-            const errStr = String(err?.message || err);
-            if (errStr.includes('NotAllowedError') || errStr.includes('Permission')) {
-              setCameraError('Izin akses kamera ditolak oleh browser. Silakan aktifkan izin kamera atau gunakan tab Upload QR / Input Manual.');
-            } else {
-              setCameraError('Kamera tidak terdeteksi pada perangkat ini (misal: PC desktop tanpa webcam). Silakan gunakan tab "Upload QR" atau "Input Manual".');
-            }
-          }
-        });
-    }
-
-    return () => {
-      isMounted = false;
-      if (scannerRef.current) {
-        try {
-          if (scannerRef.current.isScanning) {
-            scannerRef.current.stop().then(() => scannerRef.current?.clear()).catch(() => {});
-          } else {
-            scannerRef.current.clear();
-          }
-        } catch (e) {
-          // ignore cleanup errors
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 240, height: 240 },
+        },
+        async (decodedText) => {
+          console.log('✅ QR Code terdeteksi:', decodedText);
+          await stopCamera();
+          handleVerify(decodedText);
+        },
+        () => {
+          // ignore loop parse failure
         }
-        scannerRef.current = null;
+      );
+
+      setIsCameraActive(true);
+    } catch (err: any) {
+      console.warn('Gagal menyalakan kamera:', err);
+      setIsCameraActive(false);
+      const msg = String(err?.message || err);
+      if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
+        setCameraError('Izin akses kamera ditolak. Silakan izinkan browser menggunakan kamera.');
+      } else {
+        setCameraError('Kamera tidak terdeteksi atau sedang digunakan oleh aplikasi lain. Anda bisa beralih ke tab "Upload QR" atau "Input Manual".');
       }
-    };
+    }
+  };
+
+  // Efek menyalakan kamera otomatis saat pertama kali tab Kamera aktif
+  useEffect(() => {
+    if (activeTab === 'camera') {
+      const timer = setTimeout(() => {
+        startCamera();
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      stopCamera();
+    }
   }, [activeTab]);
+
+  const handleTabChange = async (tab: 'camera' | 'upload' | 'manual') => {
+    if (activeTab === tab) return;
+    await stopCamera();
+    setCameraError(null);
+    setActiveTab(tab);
+  };
 
   const handleVerify = async (codeToVerify: string) => {
     const cleanCode = codeToVerify.trim();
@@ -115,17 +134,17 @@ export const GateScannerPage: React.FC = () => {
         icon: 'success',
         title: 'Check-In Berhasil!',
         html: `
-          <div style="text-align: left; font-size: 14px; margin-top: 8px;">
-            <p style="margin: 4px 0;"><b>Pengunjung:</b> ${resultData.buyerName || '-'}</p>
-            <p style="margin: 4px 0;"><b>Acara:</b> ${resultData.eventName || '-'}</p>
-            <p style="margin: 4px 0;"><b>Tier Tiket:</b> ${resultData.ticketTier || '-'} (${resultData.attendeeCount || 1} orang)</p>
-            <p style="margin: 8px 0 0 0; color: #22c55e; font-weight: bold;">
-              <i class="fas fa-check-circle me-1"></i> STATUS: CHECKED-IN
-            </p>
+          <div style="text-align: left; font-size: 14px; margin-top: 10px; line-height: 1.6;">
+            <div><b>Nama Pengunjung:</b> ${resultData.buyerName || '-'}</div>
+            <div><b>Acara:</b> ${resultData.eventName || '-'}</div>
+            <div><b>Kategori Tiket:</b> ${resultData.ticketTier || '-'} (${resultData.attendeeCount || 1} orang)</div>
+            <div style="color: #22c55e; margin-top: 6px; font-weight: bold;">
+              <i class="fas fa-check-circle me-1"></i> STATUS: CHECKED-IN (VALID)
+            </div>
           </div>
         `,
         confirmButtonColor: '#22c55e',
-        confirmButtonText: 'Selesai',
+        confirmButtonText: 'Lanjutkan Scan Berikutnya',
       });
       setManualCode('');
     } catch (err: any) {
@@ -169,125 +188,163 @@ export const GateScannerPage: React.FC = () => {
   };
 
   return (
-    <div className="container" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
-      {/* Hidden container for temp file decoding */}
+    <div className="container" style={{ paddingTop: '135px', paddingBottom: '70px', position: 'relative', zIndex: 1 }}>
+      {/* CSS untuk mematikan canvas ganda pada pemindai kamera */}
+      <style>{`
+        #camera-scanner-box {
+          position: relative !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+          background: #000 !important;
+          border: 2px solid var(--kikk-yellow) !important;
+        }
+        #camera-scanner-box video {
+          width: 100% !important;
+          height: auto !important;
+          max-height: 340px !important;
+          object-fit: cover !important;
+          display: block !important;
+          margin: 0 auto !important;
+        }
+        #camera-scanner-box canvas {
+          display: none !important;
+        }
+        #camera-scanner-box img {
+          display: none !important;
+        }
+        #camera-scanner-box #qr-shaded-region {
+          border-color: rgba(255, 215, 0, 0.4) !important;
+        }
+      `}</style>
+
+      {/* Hidden container untuk decode file */}
       <div id="qr-temp-file-reader" style={{ display: 'none' }}></div>
 
-      {/* Header Title */}
+      {/* Header Halaman */}
       <div className="text-center mb-4">
-        <div style={{ fontSize: '12px', letterSpacing: '2px', color: 'var(--kikk-yellow)', marginBottom: '8px' }}>
-          GATE ENTRY SCANNER
+        <div style={{ fontSize: '13px', letterSpacing: '2px', color: 'var(--kikk-yellow)', marginBottom: '8px' }}>
+          GATE ENTRY VALIDATION
         </div>
-        <h2 className="kikk-title m-0" style={{ fontSize: '2rem' }}>Pemindai Tiket Masuk</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '6px 0 0 0' }}>
-          Pindai QR Code atau masukkan kode booking tiket pengunjung di pintu masuk acara
+        <h2 className="kikk-title m-0" style={{ fontSize: '2.2rem' }}>Pemindai Tiket Masuk</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', margin: '6px 0 0 0' }}>
+          Validasi tiket pengunjung di gerbang venue &bull; Real-time WebSocket terhubung
         </p>
       </div>
 
       <div className="row justify-content-center">
         <div className="col-lg-6 col-md-8">
-          <div className="kikk-card p-4 p-md-5 shadow-lg" style={{ border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+          <div className="kikk-card p-4 p-md-5 shadow-lg" style={{ border: '1px solid rgba(255, 215, 0, 0.25)' }}>
             
-            {/* Top Navigation Tabs */}
-            <div className="d-flex justify-content-center gap-2 mb-4 p-1 rounded-3" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            {/* 3 Tab Mode Switcher - Jelas & Mudah Diklik */}
+            <div className="d-flex justify-content-center gap-2 mb-4 p-1 rounded-3" style={{ background: 'rgba(255,255,255,0.08)', position: 'relative', zIndex: 100 }}>
               <button
                 type="button"
-                onClick={() => setActiveTab('camera')}
+                onClick={() => handleTabChange('camera')}
                 className={`btn btn-sm py-2 px-3 fw-bold rounded-2 flex-grow-1 ${
-                  activeTab === 'camera' ? 'btn-warning text-dark' : 'text-white'
+                  activeTab === 'camera' ? 'btn-warning text-dark shadow' : 'text-white'
                 }`}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', fontSize: '13px' }}
               >
                 <i className="fas fa-camera me-1"></i> Kamera QR
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('upload')}
+                onClick={() => handleTabChange('upload')}
                 className={`btn btn-sm py-2 px-3 fw-bold rounded-2 flex-grow-1 ${
-                  activeTab === 'upload' ? 'btn-warning text-dark' : 'text-white'
+                  activeTab === 'upload' ? 'btn-warning text-dark shadow' : 'text-white'
                 }`}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', fontSize: '13px' }}
               >
                 <i className="fas fa-image me-1"></i> Upload QR
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('manual')}
+                onClick={() => handleTabChange('manual')}
                 className={`btn btn-sm py-2 px-3 fw-bold rounded-2 flex-grow-1 ${
-                  activeTab === 'manual' ? 'btn-warning text-dark' : 'text-white'
+                  activeTab === 'manual' ? 'btn-warning text-dark shadow' : 'text-white'
                 }`}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', fontSize: '13px' }}
               >
                 <i className="fas fa-keyboard me-1"></i> Input Manual
               </button>
             </div>
 
-            {/* TAB 1: KAMERA QR SCANNER */}
-            <div style={{ display: activeTab === 'camera' ? 'block' : 'none' }}>
+            {/* TAB 1: KAMERA QR (1 GAMBAR TUNGGAL, TANPA CANVAS DUPLIKAT) */}
+            {activeTab === 'camera' && (
               <div className="text-center">
-                <div
-                  id="camera-scanner-box"
-                  style={{
-                    width: '100%',
-                    maxWidth: '360px',
-                    margin: '0 auto',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    border: '2px solid var(--kikk-yellow)',
-                    background: '#000',
-                    minHeight: '260px',
-                  }}
-                ></div>
+                <div id="camera-scanner-box" style={{ width: '100%', maxWidth: '360px', margin: '0 auto', minHeight: '260px' }}></div>
 
                 {cameraError ? (
                   <div className="alert alert-warning text-start p-3 mt-3 rounded-3" style={{ fontSize: '13px' }}>
-                    <i className="fas fa-exclamation-circle me-2 text-warning"></i>
+                    <i className="fas fa-exclamation-triangle me-2 text-warning"></i>
                     {cameraError}
                   </div>
                 ) : (
-                  <p className="mt-3 mb-0 text-white-50" style={{ fontSize: '13px' }}>
+                  <div className="mt-3">
                     {isCameraActive ? (
-                      <span className="text-success">
-                        <i className="fas fa-dot-circle fa-beat me-1"></i> Kamera Aktif &bull; Arahkan QR Code tiket ke kotak pemindai
+                      <span className="text-success fw-bold" style={{ fontSize: '13px' }}>
+                        <i className="fas fa-circle text-success me-1"></i> Kamera Aktif &bull; Arahkan QR Code tiket ke depan layar
                       </span>
                     ) : (
-                      'Menghubungkan ke kamera...'
+                      <span className="text-white-50" style={{ fontSize: '13px' }}>Menghubungkan ke kamera...</span>
                     )}
-                  </p>
+                  </div>
                 )}
+
+                <div className="d-flex justify-content-center gap-2 mt-3">
+                  {isCameraActive ? (
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="btn btn-outline-danger btn-sm py-2 px-3"
+                      style={{ cursor: 'pointer', fontSize: '12px' }}
+                    >
+                      <i className="fas fa-stop me-1"></i> Matikan Kamera
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="btn-kikk btn-sm py-2 px-3"
+                      style={{ cursor: 'pointer', fontSize: '12px' }}
+                    >
+                      <i className="fas fa-video me-1"></i> Nyalakan Ulang Kamera
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* TAB 2: UPLOAD GAMBAR QR */}
             {activeTab === 'upload' && (
               <div className="text-center py-3">
                 <div
                   style={{
-                    width: '70px',
-                    height: '70px',
+                    width: '76px',
+                    height: '76px',
                     margin: '0 auto 15px',
                     background: 'rgba(255,215,0,0.1)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '28px',
+                    fontSize: '32px',
                     color: 'var(--kikk-yellow)',
                     border: '1px solid var(--glass-border)',
                   }}
                 >
-                  <i className="fas fa-qrcode"></i>
+                  <i className="fas fa-cloud-upload-alt"></i>
                 </div>
                 <h5 className="text-white mb-2">Unggah Foto / Screenshot QR Tiket</h5>
                 <p className="text-white-50 mb-4" style={{ fontSize: '13px' }}>
-                  Pilih file gambar QR tiket dari galeri atau berkas komputer Anda
+                  Pilih file gambar QR code tiket dari galeri atau berkas komputer Anda
                 </p>
 
                 <label
                   className="btn-kikk py-3 px-4 d-inline-flex align-items-center justify-content-center"
                   style={{ cursor: 'pointer', minWidth: '220px' }}
                 >
-                  <i className={`fas ${isVerifying ? 'fa-spinner fa-spin' : 'fa-upload'} me-2`}></i>
+                  <i className={`fas ${isVerifying ? 'fa-spinner fa-spin' : 'fa-folder-open'} me-2`}></i>
                   {isVerifying ? 'MEMINDAI GAMBAR...' : 'Pilih Gambar QR'}
                   <input
                     type="file"
@@ -310,15 +367,15 @@ export const GateScannerPage: React.FC = () => {
                 <div className="text-center mb-4">
                   <div
                     style={{
-                      width: '70px',
-                      height: '70px',
+                      width: '76px',
+                      height: '76px',
                       margin: '0 auto 15px',
                       background: 'rgba(255,215,0,0.1)',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '28px',
+                      fontSize: '32px',
                       color: 'var(--kikk-yellow)',
                       border: '1px solid var(--glass-border)',
                     }}
@@ -327,7 +384,7 @@ export const GateScannerPage: React.FC = () => {
                   </div>
                   <h5 className="text-white mb-1">Ketik Kode Booking Tiket</h5>
                   <p className="text-white-50" style={{ fontSize: '13px' }}>
-                    Masukkan kode ID tiket / UUID tiket pengunjung
+                    Masukkan atau tempel kode booking / UUID tiket pengunjung
                   </p>
                 </div>
 
@@ -336,7 +393,7 @@ export const GateScannerPage: React.FC = () => {
                   <input
                     type="text"
                     className="kikk-form-control text-center fs-5 fw-bold"
-                    placeholder="Masukkan kode booking di sini..."
+                    placeholder="Contoh: bb8a87e8-2f17-4499-b802-014bbc49d9f9"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     style={{ letterSpacing: '1px' }}
