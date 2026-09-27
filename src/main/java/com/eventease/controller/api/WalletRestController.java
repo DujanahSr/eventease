@@ -21,6 +21,8 @@ import com.eventease.security.UserPrincipal;
 import com.eventease.service.DashboardStatisticsService;
 import com.eventease.service.WithdrawalService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Tag(name = "7. Dompet & Penarikan Dana", description = "Saldo pendapatan tiket penyelenggara dan approval penarikan oleh Admin")
 @RestController
 @RequestMapping("/api/wallet")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class WalletRestController {
     private final DashboardStatisticsService dashboardStatisticsService;
     private final AkunRepository akunRepository;
 
+    @Operation(summary = "Ringkasan Saldo Dompet", description = "Mengambil total pendapatan kotor, potongan platform fee 5%, dan saldo yang dapat ditarik.")
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<WalletSummaryDto>> getWalletSummary(@AuthenticationPrincipal UserPrincipal userPrincipal) {

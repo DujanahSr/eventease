@@ -1,73 +1,37 @@
 services:
   # =========================================================================
-  # Database Service: PostgreSQL 16 Alpine
+  # 1. Reverse Proxy Gateway: Nginx Alpine
   # =========================================================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: eventease-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME:-eventease_db}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secret123}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - eventease_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eventease_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # =========================================================================
-  # Cache & Token Blacklist Service: Redis 7 Alpine
-  # =========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: eventease-redis
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: eventease-nginx
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
+      - "${NGINX_PORT:-80}:80"
+    depends_on:
+      - frontend
+      - backend
     networks:
       - eventease_net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # =========================================================================
-  # Asynchronous Message Broker: RabbitMQ 3 Management Alpine
+  # 2. Frontend Web Application: React 18 + TypeScript + Vite
   # =========================================================================
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: eventease-rabbitmq
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eventease-frontend
     restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+    depends_on:
+      - backend
     networks:
       - eventease_net
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
 
   # =========================================================================
-  # Backend API Service: Spring Boot 3 + JDK 21
+  # 3. Backend REST API Service: Spring Boot 3 + Temurin JDK 21
   # =========================================================================
   backend:
     build:
@@ -107,10 +71,77 @@ services:
     networks:
       - eventease_net
     ports:
-      - "${PORT:-8081}:8081"
+      - "${BACKEND_PORT:-8081}:8081"
+
+  # =========================================================================
+  # 4. Relational Database: PostgreSQL 16 Alpine
+  # =========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: eventease-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-eventease_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secret123}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - eventease_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eventease_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =========================================================================
+  # 5. In-Memory Cache & Token Blacklist: Redis 7 Alpine
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: eventease-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eventease_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # 6. Asynchronous Message Broker: RabbitMQ 3 Management Alpine
+  # =========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: eventease-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - eventease_net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 # =========================================================================
-# Persistent Volumes & Network Definitions
+# Volumes & Networks Definitions
 # =========================================================================
 volumes:
   postgres_data:

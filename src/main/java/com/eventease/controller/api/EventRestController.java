@@ -14,11 +14,14 @@ import com.eventease.dto.event.EventSummaryDto;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.api.EventApiService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Tag(name = "2. Manajemen Acara", description = "Katalog acara publik, filter kategori, detail acara, dan CRUD penyelenggara")
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class EventRestController {
 
     private final EventApiService eventApiService;
 
+    @Operation(summary = "Katalog Acara Publik", description = "Mengambil daftar acara dengan pagination, filter pencarian teks, kategori, dan pengurutan.")
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<EventSummaryDto>>> getAllEvents(
             @RequestParam(required = false) String search,

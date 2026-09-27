@@ -21,6 +21,8 @@ import com.eventease.repository.EventRepository;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.FeedbackService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Tag(name = "8. Ulasan & Feedback", description = "Review dan rating bintang acara oleh peserta")
 @RestController
 @RequestMapping("/api/feedback")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class FeedbackRestController {
     private final AkunRepository akunRepository;
     private final EventRepository eventRepository;
 
+    @Operation(summary = "Ulasan Acara", description = "Mengambil daftar review dan rating untuk acara tertentu.")
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<PagedResponse<FeedbackResponseDto>>> getEventFeedbacks(
             @PathVariable String eventId,

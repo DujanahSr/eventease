@@ -15,11 +15,14 @@ import com.eventease.exception.ResourceNotFoundException;
 import com.eventease.model.Category;
 import com.eventease.service.CategoryService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Tag(name = "3. Kategori Acara", description = "Daftar kategori resmi dan manajemen kategori oleh Super Admin")
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class CategoryRestController {
 
     private final CategoryService categoryService;
 
+    @Operation(summary = "Daftar Semua Kategori", description = "Mengambil seluruh kategori acara yang aktif di platform.")
     @GetMapping
     public ResponseEntity<ApiResponse<List<CategoryDto>>> getAllCategories() {
         log.info("API Request: Ambil semua kategori event");

@@ -15,11 +15,14 @@ import com.eventease.dto.booking.BookingResponseDto;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.api.BookingApiService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Tag(name = "4. Pemesanan & Tiket", description = "Reservasi tiket, integrasi Snap Midtrans, tiket saya, dan unduh PDF")
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class BookingRestController {
 
     private final BookingApiService bookingApiService;
 
+    @Operation(summary = "Pesan Tiket Acara", description = "Membuat pesanan tiket baru dan mengembalikan token Snap Midtrans untuk pembayaran.")
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponseDto>> createBooking(
             @Valid @RequestBody BookingRequestDto requestDto,

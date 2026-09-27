@@ -14,6 +14,8 @@ import com.eventease.model.Akun;
 import com.eventease.repository.AkunRepository;
 import com.eventease.service.AkunService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Tag(name = "9. Manajemen Pengguna", description = "Super Administrator console untuk kelola user dan perubahan role")
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class AdminUserRestController {
     private final AkunService akunService;
     private final AkunRepository akunRepository;
 
+    @Operation(summary = "Daftar Seluruh Pengguna", description = "Mengambil data seluruh akun pengguna platform (Admin, Organizer, User) dengan pagination.")
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<UserDto>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,

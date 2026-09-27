@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eventease.service.api.BookingApiService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Tag(name = "6. Webhook Pembayaran", description = "Listener callback notifikasi status transaksi dari payment gateway Midtrans")
 @RestController
 @RequestMapping({"/api/payments/webhook", "/api/payment/notification"})
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class PaymentWebhookRestController {
 
     private final BookingApiService bookingApiService;
 
+    @Operation(summary = "Notifikasi Webhook Midtrans", description = "Menerima callback payload JSON dari Midtrans saat status transaksi berubah (settlement, pending, expire, deny).")
     @PostMapping
     public ResponseEntity<String> handleMidtransNotification(@RequestBody Map<String, Object> payload) {
         log.info("Menerima panggilan webhook pembayaran Midtrans");

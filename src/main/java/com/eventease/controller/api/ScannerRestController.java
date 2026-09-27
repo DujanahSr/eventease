@@ -14,11 +14,14 @@ import com.eventease.dto.booking.TicketValidationResponseDto;
 import com.eventease.security.UserPrincipal;
 import com.eventease.service.api.BookingApiService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Tag(name = "5. Gate Scanner Check-In", description = "Validasi QR Code tiket pada pintu masuk acara secara real-time")
 @RestController
 @RequestMapping("/api/scanner")
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class ScannerRestController {
 
     private final BookingApiService bookingApiService;
 
+    @Operation(summary = "Pindai & Validasi Tiket", description = "Memverifikasi keabsahan QR code tiket dan menandai status tiket menjadi CHECKED_IN.")
     @PostMapping("/verify")
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<TicketValidationResponseDto>> verifyAndCheckInTicket(
