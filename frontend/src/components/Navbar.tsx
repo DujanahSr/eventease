@@ -20,10 +20,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+    <nav className="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
       <div className="container">
-        <Link className="navbar-brand" to="/">
-          Eventease
+        <Link className="navbar-brand kikk-title text-lowercase" to="/" style={{ fontSize: '1.8rem', letterSpacing: '1px' }}>
+          eventease.
         </Link>
         <button
           className="navbar-toggler"
@@ -40,21 +40,26 @@ export const Navbar: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center">
             <li className="nav-item">
-              <Link className="nav-link" to="/events" style={{ color: 'var(--kikk-yellow)' }}>
-                Cari Acara
+              <Link className="nav-link" to="/" style={{ color: '#fff' }}>
+                Beranda
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/events" style={{ color: '#fff' }}>
+                Katalog Acara
               </Link>
             </li>
 
             {!isAuthenticated ? (
               <>
-                <li className="nav-item ms-lg-3">
-                  <Link className="btn-kikk-outline btn-sm px-4 py-2" to="/login">
+                <li className="nav-item ms-2">
+                  <Link className="nav-link" to="/login">
                     Masuk
                   </Link>
                 </li>
-                <li className="nav-item ms-lg-2">
-                  <Link className="btn-kikk btn-sm px-4 py-2" to="/register">
-                    Daftar
+                <li className="nav-item ms-3">
+                  <Link className="btn-kikk" to="/register">
+                    Daftar Gratis
                   </Link>
                 </li>
               </>
