@@ -28,6 +28,14 @@ import com.eventease.security.CustomUserDetailsService;
 import com.eventease.security.JwtService;
 import com.eventease.security.UserPrincipal;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Collections;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +43,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    @Value("${google.client.id:146370175848-nv395oku7lv35171e8t26011sajhamvp.apps.googleusercontent.com}")
+    private String googleClientId;
 
     private final AuthenticationManager authenticationManager;
     private final AkunRepository akunRepository;
@@ -124,6 +135,63 @@ public class AuthServiceImpl implements AuthService {
             throw new ResourceNotFoundException("Pengguna", "email", email);
         }
         return UserDto.fromEntity(akun);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponseDto loginWithGoogle(String credential) {
+        log.info("Memproses autentikasi Google Identity Services");
+        try {
+            NetHttpTransport transport = new NetHttpTransport();
+            GsonFactory jsonFactory = new GsonFactory();
+
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(credential);
+            if (idToken == null) {
+                throw new UnauthorizedException("Kredensial Google ID Token tidak valid atau kedaluwarsa.");
+            }
+
+            Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String picture = (String) payload.get("picture");
+
+            Akun user = akunRepository.findByEmail(email);
+            if (user == null) {
+                Role userRole = roleRepository.findRoleByRoleName(RoleConstants.ROLE_USER);
+                if (userRole == null) {
+                    userRole = new Role();
+                    userRole.setRoleName("USER");
+                    userRole = roleRepository.save(userRole);
+                }
+
+                user = new Akun();
+                user.setEmail(email.trim().toLowerCase());
+                user.setName(name != null ? name : "Pengguna Google");
+                user.setPhone("");
+                user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+                user.setRole(userRole);
+                user.setProfilePicture(picture);
+                user.setSaldo(0);
+
+                user = akunRepository.save(user);
+                log.info("Pengguna baru via Google berhasil didaftarkan: {}", email);
+            } else if (picture != null && (user.getProfilePicture() == null || user.getProfilePicture().isBlank())) {
+                user.setProfilePicture(picture);
+                akunRepository.save(user);
+            }
+
+            UserPrincipal userPrincipal = UserPrincipal.create(user);
+            return generateAuthResponse(userPrincipal);
+        } catch (UnauthorizedException ue) {
+            throw ue;
+        } catch (Exception e) {
+            log.error("Gagal verifikasi Google ID Token: {}", e.getMessage());
+            throw new UnauthorizedException("Verifikasi Google ID Token gagal: " + e.getMessage());
+        }
     }
 
     private AuthResponseDto generateAuthResponse(UserPrincipal userPrincipal) {

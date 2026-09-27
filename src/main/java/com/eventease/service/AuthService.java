@@ -10,5 +10,6 @@ public interface AuthService {
     AuthResponseDto login(LoginDto loginDto);
     AuthResponseDto register(RegisterDto registerDto);
     AuthResponseDto refreshToken(RefreshTokenDto tokenDto);
+    AuthResponseDto loginWithGoogle(String credential);
     UserDto getCurrentUser(String email);
 }

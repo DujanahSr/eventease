@@ -53,6 +53,14 @@ public class AuthRestController {
         return ResponseEntity.ok(ApiResponse.success("Login berhasil", response));
     }
 
+    @Operation(summary = "Login dengan Google OAuth2", description = "Autentikasi akun via Google Identity Services ID Token, auto register akun baru jika belum terdaftar.")
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponseDto>> googleLogin(@Valid @RequestBody com.eventease.dto.auth.GoogleLoginDto googleDto) {
+        log.info("API Request: Google OAuth2 Login");
+        AuthResponseDto response = authService.loginWithGoogle(googleDto.getCredential());
+        return ResponseEntity.ok(ApiResponse.success("Login dengan Google berhasil", response));
+    }
+
     @Operation(summary = "Perbarui Access Token", description = "Memperoleh access token JWT baru menggunakan refresh token yang masih valid.")
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponseDto>> refreshToken(@Valid @RequestBody RefreshTokenDto tokenDto) {

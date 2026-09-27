@@ -27,4 +27,14 @@ export const eventService = {
     const res = await api.post<ApiResponse<EventDetail>>('/events', eventData);
     return res.data.data;
   },
+
+  async uploadImage(file: File, folder = 'eventease/events'): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+    const res = await api.post<ApiResponse<{ url: string }>>('/media/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data.data.url;
+  },
 };

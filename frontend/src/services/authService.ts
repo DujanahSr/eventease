@@ -38,6 +38,11 @@ export const authService = {
     return res.data.data;
   },
 
+  async loginWithGoogle(credential: string): Promise<AuthResponseData> {
+    const res = await api.post<ApiResponse<AuthResponseData>>('/auth/google', { credential });
+    return res.data.data;
+  },
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
