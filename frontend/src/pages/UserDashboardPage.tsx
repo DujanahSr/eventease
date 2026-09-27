@@ -13,6 +13,10 @@ export const UserDashboardPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Metadata profil tambahan (disimpan di localStorage untuk melengkapi data pengguna)
+  const [userBio, setUserBio] = useState<string>(() => localStorage.getItem('user_bio') || 'Event Enthusiast & Music Lover');
+  const [userCity, setUserCity] = useState<string>(() => localStorage.getItem('user_city') || 'Jakarta, Indonesia');
+
   useEffect(() => {
     const fetchTickets = async () => {
       setIsLoading(true);
@@ -49,7 +53,7 @@ export const UserDashboardPage: React.FC = () => {
     try {
       Swal.fire({
         title: 'Mengunggah Foto Profil...',
-        text: 'Menyimpan ke Cloud Storage (Cloudinary CDN)...',
+        text: 'Menyimpan berkas ke Cloud Storage (Cloudinary CDN)...',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
@@ -83,43 +87,85 @@ export const UserDashboardPage: React.FC = () => {
 
   const handleEditProfile = async () => {
     const { value: formValues } = await Swal.fire({
-      title: 'Perbarui Data Profil',
+      title: 'Pengaturan Profil Pengguna',
+      width: 560,
       html: `
-        <div style="text-align: left; font-size: 14px;">
-          <div style="margin-bottom: 14px;">
-            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #1e1b4b;">Nama Lengkap</label>
-            <input id="swal-input-name" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box; border-radius: 8px;" value="${user?.name || ''}">
+        <div style="text-align: left; font-size: 14px; margin-top: 15px;">
+          <!-- Readonly Email Status -->
+          <div style="margin-bottom: 16px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 215, 0, 0.15); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.5px;">ALAMAT EMAIL (TERDAFTAR)</div>
+              <div style="color: #fff; font-weight: 600; font-size: 13px;">${user?.email || '-'}</div>
+            </div>
+            <span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+              <i class="fas fa-shield-alt"></i> Terverifikasi
+            </span>
           </div>
+
+          <!-- Nama Lengkap -->
+          <div style="margin-bottom: 14px;">
+            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #FFD700; font-size: 13px;">
+              <i class="fas fa-user me-2"></i> Nama Lengkap
+            </label>
+            <input id="swal-input-name" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box;" value="${user?.name || ''}" placeholder="Masukkan nama lengkap Anda">
+          </div>
+
+          <!-- Nomor WhatsApp / HP -->
+          <div style="margin-bottom: 14px;">
+            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #FFD700; font-size: 13px;">
+              <i class="fab fa-whatsapp me-2"></i> Nomor WhatsApp / Kontak Aktif
+            </label>
+            <input id="swal-input-phone" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box;" value="${user?.phone || ''}" placeholder="Contoh: 081234567890">
+          </div>
+
+          <!-- Kota Domisili -->
+          <div style="margin-bottom: 14px;">
+            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #FFD700; font-size: 13px;">
+              <i class="fas fa-map-marker-alt me-2"></i> Kota Domisili
+            </label>
+            <input id="swal-input-city" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box;" value="${userCity}" placeholder="Contoh: Jakarta, Indonesia">
+          </div>
+
+          <!-- Bio Profil Singkat -->
           <div>
-            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #1e1b4b;">Nomor WhatsApp / Kontak</label>
-            <input id="swal-input-phone" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box; border-radius: 8px;" value="${user?.phone || ''}">
+            <label style="display:block; margin-bottom: 6px; font-weight: 600; color: #FFD700; font-size: 13px;">
+              <i class="fas fa-quote-left me-2"></i> Bio Singkat / Preferensi Acara
+            </label>
+            <textarea id="swal-input-bio" class="swal2-textarea" style="width: 100%; margin: 0; box-sizing: border-box; height: 75px; resize: none;" placeholder="Ceritakan singkat minat acara Anda...">${userBio}</textarea>
           </div>
         </div>
       `,
       focusConfirm: false,
       showCancelButton: true,
-      confirmButtonText: 'Simpan Perubahan',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#eab308',
-      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fas fa-save me-1"></i> Simpan Perubahan',
+      cancelButtonText: '<i class="fas fa-times me-1"></i> Batal',
       preConfirm: () => {
         const name = (document.getElementById('swal-input-name') as HTMLInputElement).value;
         const phone = (document.getElementById('swal-input-phone') as HTMLInputElement).value;
+        const city = (document.getElementById('swal-input-city') as HTMLInputElement).value;
+        const bio = (document.getElementById('swal-input-bio') as HTMLTextAreaElement).value;
+
         if (!name.trim()) {
           Swal.showValidationMessage('Nama lengkap tidak boleh kosong');
           return false;
         }
-        return { name: name.trim(), phone: phone.trim() };
+        return { name: name.trim(), phone: phone.trim(), city: city.trim(), bio: bio.trim() };
       },
     });
 
     if (formValues) {
       try {
-        await updateProfile(formValues);
+        await updateProfile({ name: formValues.name, phone: formValues.phone });
+        setUserCity(formValues.city);
+        setUserBio(formValues.bio);
+        localStorage.setItem('user_city', formValues.city);
+        localStorage.setItem('user_bio', formValues.bio);
+
         Swal.fire({
           icon: 'success',
           title: 'Profil Berhasil Diperbarui',
-          timer: 1500,
+          text: 'Data identitas dan preferensi Anda telah disimpan.',
+          timer: 1800,
           showConfirmButton: false,
         });
       } catch (err: any) {
@@ -135,10 +181,10 @@ export const UserDashboardPage: React.FC = () => {
   // Metrics computation
   const stats = useMemo(() => {
     const totalCount = tickets.length;
-    const paidCount = tickets.filter(t => t.status === 'PAID').length;
-    const pendingCount = tickets.filter(t => t.status === 'PENDING').length;
+    const paidCount = tickets.filter((t) => t.status === 'PAID').length;
+    const pendingCount = tickets.filter((t) => t.status === 'PENDING').length;
     const totalSpent = tickets
-      .filter(t => t.status === 'PAID')
+      .filter((t) => t.status === 'PAID')
       .reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
 
     return { totalCount, paidCount, pendingCount, totalSpent };
@@ -147,13 +193,13 @@ export const UserDashboardPage: React.FC = () => {
   // Filtered tickets
   const filteredTickets = useMemo(() => {
     if (statusFilter === 'ALL') return tickets;
-    return tickets.filter(t => t.status === statusFilter);
+    return tickets.filter((t) => t.status === statusFilter);
   }, [tickets, statusFilter]);
 
   return (
     <div className="position-relative py-5 min-vh-100" style={{ backgroundColor: '#0b0616', color: '#fff' }}>
       {/* Background Geometric Grid Pattern */}
-      <div className="pattern-geometric-overlay" style={{ opacity: 0.25 }}></div>
+      <div className="pattern-geometric-overlay" style={{ opacity: 0.2 }}></div>
 
       {/* Hidden File Input for Avatar */}
       <input
@@ -181,8 +227,8 @@ export const UserDashboardPage: React.FC = () => {
                     alt={user.name}
                     className="rounded-circle shadow-lg"
                     style={{
-                      width: '92px',
-                      height: '92px',
+                      width: '95px',
+                      height: '95px',
                       objectFit: 'cover',
                       border: '3px solid var(--kikk-yellow)',
                       boxShadow: '0 0 25px rgba(255, 215, 0, 0.35)',
@@ -192,9 +238,9 @@ export const UserDashboardPage: React.FC = () => {
                   <div
                     className="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-lg"
                     style={{
-                      width: '92px',
-                      height: '92px',
-                      fontSize: '2.2rem',
+                      width: '95px',
+                      height: '95px',
+                      fontSize: '2.4rem',
                       background: 'linear-gradient(135deg, #2b1055, #7597de)',
                       color: 'var(--kikk-yellow)',
                       border: '3px solid var(--kikk-yellow)',
@@ -207,24 +253,28 @@ export const UserDashboardPage: React.FC = () => {
                 <div
                   className="position-absolute bottom-0 end-0 bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center shadow"
                   style={{
-                    width: '30px',
-                    height: '30px',
-                    fontSize: '12px',
+                    width: '32px',
+                    height: '32px',
+                    fontSize: '13px',
                     border: '2px solid #0b0616',
                     cursor: 'pointer',
                   }}
+                  title="Ganti foto profil"
                 >
                   <i className={`fas ${isUploadingAvatar ? 'fa-spinner fa-spin' : 'fa-camera'}`}></i>
                 </div>
               </div>
 
               <div>
-                <div className="d-flex align-items-center gap-2 mb-1">
+                <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
                   <span className="gold-glow-badge" style={{ fontSize: '11px', letterSpacing: '1px' }}>
-                    <i className="fas fa-certificate text-warning me-1"></i> VERIFIED ATTENDEE
+                    <i className="fas fa-crown text-warning me-1"></i> VERIFIED ATTENDEE
                   </span>
-                  <span className="d-inline-flex align-items-center gap-1 text-success small">
-                    <span className="live-pulse-dot"></span> Online
+                  <span className="status-indicator-badge">
+                    <i className="fas fa-shield-alt"></i> Akun Aktif
+                  </span>
+                  <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>
+                    <i className="fas fa-map-pin me-1 text-danger"></i> {userCity}
                   </span>
                 </div>
                 <h1 className="kikk-title m-0" style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
@@ -235,18 +285,21 @@ export const UserDashboardPage: React.FC = () => {
                   <span className="mx-2">&bull;</span>
                   <i className="fab fa-whatsapp me-1 text-success"></i> {user?.phone || 'Nomor WhatsApp belum diatur'}
                 </p>
+                <p className="m-0 mt-1 small" style={{ color: 'rgba(255, 255, 255, 0.55)', fontStyle: 'italic' }}>
+                  <i className="fas fa-quote-left text-warning me-1"></i> {userBio}
+                </p>
               </div>
             </div>
 
             {/* Profile Action Buttons */}
-            <div className="d-flex flex-wrap gap-3">
+            <div className="d-flex flex-wrap gap-2">
               <button
                 onClick={handleEditProfile}
                 className="btn-kikk-outline px-4 py-2"
                 style={{ fontSize: '14px', borderRadius: '12px' }}
-                title="Perbarui profil pengguna"
+                title="Perbarui biodata profil lengkap"
               >
-                <i className="fas fa-user-edit me-2 text-warning"></i> Edit Profil
+                <i className="fas fa-user-gear me-2 text-warning"></i> Edit Profil
               </button>
               <Link
                 to="/events"
@@ -258,38 +311,61 @@ export const UserDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
+          {/* Symmetrical 4-Column Metrics Bar */}
           <div className="row g-3 mt-4 pt-4 border-top" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-            <div className="col-6 col-md-3">
-              <div className="stat-box-luxury">
-                <i className="fas fa-ticket-alt text-warning fs-3"></i>
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="stat-box-luxury h-100">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ width: '48px', height: '48px', background: 'rgba(255, 215, 0, 0.1)', flexShrink: 0 }}
+                >
+                  <i className="fas fa-ticket-alt text-warning fs-4"></i>
+                </div>
                 <div>
                   <div className="text-secondary small fw-medium">Total Koleksi</div>
                   <div className="fs-4 fw-bold text-white">{stats.totalCount} Tiket</div>
                 </div>
               </div>
             </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-box-luxury">
-                <i className="fas fa-check-circle text-success fs-3"></i>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="stat-box-luxury h-100">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ width: '48px', height: '48px', background: 'rgba(34, 197, 94, 0.1)', flexShrink: 0 }}
+                >
+                  <i className="fas fa-circle-check text-success fs-4"></i>
+                </div>
                 <div>
                   <div className="text-secondary small fw-medium">Siap Digunakan</div>
                   <div className="fs-4 fw-bold text-white">{stats.paidCount} Lunas</div>
                 </div>
               </div>
             </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-box-luxury">
-                <i className="fas fa-clock text-warning fs-3"></i>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="stat-box-luxury h-100">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ width: '48px', height: '48px', background: 'rgba(234, 179, 8, 0.1)', flexShrink: 0 }}
+                >
+                  <i className="fas fa-hourglass-half text-warning fs-4"></i>
+                </div>
                 <div>
                   <div className="text-secondary small fw-medium">Menunggu Bayar</div>
                   <div className="fs-4 fw-bold text-white">{stats.pendingCount} Transaksi</div>
                 </div>
               </div>
             </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-box-luxury">
-                <i className="fas fa-shield-alt text-info fs-3"></i>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="stat-box-luxury h-100">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ width: '48px', height: '48px', background: 'rgba(59, 130, 246, 0.1)', flexShrink: 0 }}
+                >
+                  <i className="fas fa-receipt text-info fs-4"></i>
+                </div>
                 <div>
                   <div className="text-secondary small fw-medium">Total Investasi Acara</div>
                   <div className="fs-5 fw-bold text-warning">{formatRupiah(stats.totalSpent)}</div>
@@ -303,32 +379,32 @@ export const UserDashboardPage: React.FC = () => {
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
           <div>
             <h2 className="kikk-title m-0" style={{ fontSize: '1.8rem' }}>
-              Tiket & Riwayat Pemesanan
+              <i className="fas fa-ticket-alt text-warning me-2"></i> Tiket & Riwayat Pemesanan
             </h2>
             <p className="text-secondary small m-0 mt-1">
               Boarding pass digital resmi dilengkapi QR Code terenkripsi untuk check-in di gerbang acara.
             </p>
           </div>
 
-          {/* Filter Pills */}
+          {/* Filter Pills with Specific Icons */}
           <div className="d-flex gap-2 flex-wrap">
             <button
               onClick={() => setStatusFilter('ALL')}
               className={`category-pill ${statusFilter === 'ALL' ? 'active' : ''}`}
             >
-              Semua ({tickets.length})
+              <i className="fas fa-layer-group"></i> Semua ({tickets.length})
             </button>
             <button
               onClick={() => setStatusFilter('PAID')}
               className={`category-pill ${statusFilter === 'PAID' ? 'active' : ''}`}
             >
-              <i className="fas fa-check-circle text-success"></i> Aktif / Lunas ({stats.paidCount})
+              <i className="fas fa-circle-check text-success"></i> Aktif / Lunas ({stats.paidCount})
             </button>
             <button
               onClick={() => setStatusFilter('PENDING')}
               className={`category-pill ${statusFilter === 'PENDING' ? 'active' : ''}`}
             >
-              <i className="fas fa-clock text-warning"></i> Menunggu ({stats.pendingCount})
+              <i className="fas fa-hourglass-half text-warning"></i> Menunggu ({stats.pendingCount})
             </button>
           </div>
         </div>
@@ -358,7 +434,7 @@ export const UserDashboardPage: React.FC = () => {
                           <i className="fas fa-crown text-warning me-1"></i> {t.ticketCategoryName || 'VIP PASS'}
                         </span>
                         <div className="text-secondary small font-monospace">
-                          REF ID: {t.id}
+                          <i className="fas fa-fingerprint me-1 text-warning"></i> REF ID: {t.id}
                         </div>
                       </div>
 
@@ -373,7 +449,7 @@ export const UserDashboardPage: React.FC = () => {
                           <div className="d-flex align-items-center gap-2 text-secondary small">
                             <div
                               className="rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: '32px', height: '32px', background: 'rgba(255, 215, 0, 0.1)' }}
+                              style={{ width: '34px', height: '34px', background: 'rgba(255, 215, 0, 0.1)' }}
                             >
                               <i className="far fa-calendar-alt text-warning"></i>
                             </div>
@@ -388,7 +464,7 @@ export const UserDashboardPage: React.FC = () => {
                           <div className="d-flex align-items-center gap-2 text-secondary small">
                             <div
                               className="rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: '32px', height: '32px', background: 'rgba(255, 215, 0, 0.1)' }}
+                              style={{ width: '34px', height: '34px', background: 'rgba(255, 215, 0, 0.1)' }}
                             >
                               <i className="fas fa-map-marker-alt text-warning"></i>
                             </div>
@@ -408,11 +484,15 @@ export const UserDashboardPage: React.FC = () => {
                     >
                       <div>
                         <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>PEMEGANG TIKET</div>
-                        <div className="text-white fw-bold">{user?.name}</div>
+                        <div className="text-white fw-bold">
+                          <i className="fas fa-user text-warning me-1"></i> {user?.name}
+                        </div>
                       </div>
                       <div>
                         <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>KUOTA KURSI</div>
-                        <div className="text-warning fw-bold">{t.quantity} Tiket</div>
+                        <div className="text-warning fw-bold">
+                          <i className="fas fa-users me-1"></i> {t.quantity} Tiket
+                        </div>
                       </div>
                       <div>
                         <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>STATUS CHECK-IN</div>
@@ -428,24 +508,28 @@ export const UserDashboardPage: React.FC = () => {
                     {/* Top Status */}
                     <div className="w-100">
                       <div className="mb-2">
-                        <span
-                          className={`badge ${
-                            t.status === 'PAID'
-                              ? 'bg-success text-white'
-                              : t.status === 'PENDING'
-                              ? 'bg-warning text-dark'
-                              : 'bg-secondary text-white'
-                          }`}
-                          style={{
-                            padding: '6px 16px',
-                            borderRadius: '50px',
-                            fontSize: '11px',
-                            letterSpacing: '1px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {t.status === 'PAID' ? '● TIKET LUNAS (AKTIF)' : t.status === 'PENDING' ? '⏳ MENUNGGU PEMBAYARAN' : t.status}
-                        </span>
+                        {t.status === 'PAID' ? (
+                          <span
+                            className="badge bg-success text-white"
+                            style={{ padding: '7px 18px', borderRadius: '50px', fontSize: '11px', letterSpacing: '1px', fontWeight: 700 }}
+                          >
+                            <i className="fas fa-circle-check me-1"></i> TIKET LUNAS (AKTIF)
+                          </span>
+                        ) : t.status === 'PENDING' ? (
+                          <span
+                            className="badge bg-warning text-dark"
+                            style={{ padding: '7px 18px', borderRadius: '50px', fontSize: '11px', letterSpacing: '1px', fontWeight: 700 }}
+                          >
+                            <i className="fas fa-hourglass-half me-1"></i> MENUNGGU PEMBAYARAN
+                          </span>
+                        ) : (
+                          <span
+                            className="badge bg-secondary text-white"
+                            style={{ padding: '7px 18px', borderRadius: '50px', fontSize: '11px', letterSpacing: '1px', fontWeight: 700 }}
+                          >
+                            {t.status}
+                          </span>
+                        )}
                       </div>
 
                       <div className="my-3">

@@ -56,7 +56,7 @@ export const HomePage: React.FC = () => {
         <div className="container hero-content py-5">
           {/* Live Platform Badge */}
           <div className="d-inline-flex align-items-center gap-2 gold-glow-badge mb-4 anim-fade-in">
-            <span className="live-pulse-dot"></span>
+            <i className="fas fa-sparkles text-warning"></i>
             <span>PLATFORM TIKET MASA DEPAN &bull; 2026 EDITION</span>
           </div>
 
