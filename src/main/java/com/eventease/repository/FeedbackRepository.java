@@ -12,6 +12,9 @@ import org.springframework.data.domain.Pageable;
 public interface FeedbackRepository extends JpaRepository<Feedback, String> {
     boolean existsByEventId(String eventId);
 
+    List<Feedback> findByEventId(String eventId);
+    Page<Feedback> findByEventId(String eventId, Pageable pageable);
+
     List<Feedback> findAllByUserId(String userId);
     Page<Feedback> findAllByUserId(String userId, Pageable pageable);
 

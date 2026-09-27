@@ -33,6 +33,14 @@ public class FeedbackService {
         return feedbackRepository.findAllByUserId(userId, pageable);
     }
 
+    public List<Feedback> findByEventId(String eventId) {
+        return feedbackRepository.findByEventId(eventId);
+    }
+
+    public Page<Feedback> findByEventId(String eventId, Pageable pageable) {
+        return feedbackRepository.findByEventId(eventId, pageable);
+    }
+
     public Feedback findById(String id) {
         return feedbackRepository.findById(id).orElse(null);
     }

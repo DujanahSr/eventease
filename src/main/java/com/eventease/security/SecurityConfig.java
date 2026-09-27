@@ -44,42 +44,36 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthEntryPoint)
                 )
                 .sessionManagement(session -> session
-                        // IF_REQUIRED allows HttpSession for Thymeleaf while /api remains stateless JWT
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // OpenAPI / Swagger Documentation & Root
+                        .requestMatchers(
+                                "/",
+                                "/api",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/favicon.ico",
+                                "/images/**"
+                        ).permitAll()
+
                         // Public REST API endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/feedback/event/**").permitAll()
                         .requestMatchers("/api/payments/webhook/**", "/api/payment/notification", "/payments/notification", "/ws/**").permitAll()
-                        
-                        // Role-based API protection
+
+                        // Role-based REST API protection
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/organizer/**", "/api/scanner/**").hasAnyRole("ORGANIZER", "ADMIN")
-                        
+                        .requestMatchers("/api/organizer/**", "/api/scanner/**", "/api/wallet/**").hasAnyRole("ORGANIZER", "ADMIN")
+
                         // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
 
-                        // Static resources and existing legacy MVC web routes (for backward compatibility)
-                        .requestMatchers(
-                                "/",
-                                "/login",
-                                "/register",
-                                "/login-user",
-                                "/register-user",
-                                "/logout-user",
-                                "/forgot-password",
-                                "/reset-password",
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/assets/**",
-                                "/manifest.json",
-                                "/favicon.ico",
-                                "/*.html"
-                        ).permitAll()
-                        .anyRequest().permitAll()
+                        // Any remaining requests
+                        .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
