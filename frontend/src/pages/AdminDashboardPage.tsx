@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { eventService } from '../services/eventService';
 import { bookingService, triggerFileDownload, BookingResponseData } from '../services/bookingService';
 import { adminService } from '../services/adminService';
+import { partnerApplicationService, PartnerApplication } from '../services/partnerApplicationService';
 import { EventSummary, Category, User } from '../types';
 import { EventEaseLogo } from '../components/EventEaseLogo';
 import Swal from 'sweetalert2';
@@ -11,7 +12,7 @@ import Swal from 'sweetalert2';
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'categories' | 'events' | 'bookings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'partners' | 'categories' | 'events' | 'bookings'>('overview');
 
   const [events, setEvents] = useState<EventSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -19,6 +20,16 @@ export const AdminDashboardPage: React.FC = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [bookings, setBookings] = useState<BookingResponseData[]>([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
+
+  // KYC Partner Applications State
+  const [partnerApplications, setPartnerApplications] = useState<PartnerApplication[]>([]);
+  const [pendingPartnerCount, setPendingPartnerCount] = useState(0);
+  const [partnerStatusFilter, setPartnerStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+
+  const filteredPartners = useMemo(() => {
+    if (partnerStatusFilter === 'ALL') return partnerApplications;
+    return partnerApplications.filter((p) => p.status === partnerStatusFilter);
+  }, [partnerApplications, partnerStatusFilter]);
 
   const filteredBookings = useMemo(() => {
     if (bookingStatusFilter === 'ALL') return bookings;
@@ -38,22 +49,131 @@ export const AdminDashboardPage: React.FC = () => {
   const fetchAdminData = async () => {
     setIsLoading(true);
     try {
-      const [eventData, catData, userData, bookingData] = await Promise.all([
+      const [eventData, catData, userData, bookingData, partnerData, pendingCount] = await Promise.all([
         eventService.getEvents('', '', 0, 30),
         eventService.getCategories(),
         adminService.getAllUsers(0, 20),
         bookingService.getAllBookings().catch(() => [] as BookingResponseData[]),
+        partnerApplicationService.getAllApplications('ALL', 0, 50).catch(() => ({ content: [] as PartnerApplication[] })),
+        partnerApplicationService.countPending().catch(() => 0),
       ]);
       setEvents(eventData.content || []);
       setCategories(catData || []);
       setUsers(userData.content || []);
       setTotalUsers(userData.totalElements || (userData.content ? userData.content.length : 0));
       setBookings(bookingData || []);
+      setPartnerApplications(partnerData.content || []);
+      setPendingPartnerCount(pendingCount);
     } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleApprovePartner = async (app: PartnerApplication) => {
+    const confirm = await Swal.fire({
+      title: 'Setujui Kemitraan?',
+      html: `
+        <div style="text-align:left;font-size:13px;line-height:1.6">
+          <p>Anda akan menyetujui pengajuan kemitraan dari:</p>
+          <div style="padding:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-bottom:10px">
+            <div><strong>Organisasi:</strong> ${app.organizationName}</div>
+            <div><strong>Pemohon:</strong> ${app.userName} (${app.userEmail})</div>
+            <div><strong>No. Rekening:</strong> ${app.bankName} - ${app.bankAccountNumber}</div>
+          </div>
+          <p class="mb-0 text-warning">Peran pengguna akan otomatis diubah menjadi <strong>ORGANIZER</strong>.</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-check-circle me-1"></i> Ya, Setujui Kemitraan',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#22c55e',
+      background: '#120a20',
+      color: '#fff',
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await partnerApplicationService.review(app.id, 'APPROVED');
+        Swal.fire({
+          icon: 'success',
+          title: 'Kemitraan Disetujui!',
+          text: `Akun ${app.userName} (${app.organizationName}) resmi menjadi Organizer.`,
+          timer: 1800,
+          showConfirmButton: false,
+          background: '#120a20',
+          color: '#fff',
+        });
+        fetchAdminData();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menyetujui',
+          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
+          background: '#120a20',
+          color: '#fff',
+        });
+      }
+    }
+  };
+
+  const handleRejectPartner = async (app: PartnerApplication) => {
+    const { value: notes } = await Swal.fire({
+      title: 'Tolak Pengajuan Kemitraan',
+      input: 'textarea',
+      inputLabel: 'Catatan / Alasan Penolakan untuk Pemohon',
+      inputPlaceholder: 'Contoh: Foto identitas tidak jelas, mohon unggah ulang foto KTP yang dapat terbaca...',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-times me-1"></i> Tolak Pengajuan',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Batal',
+      background: '#120a20',
+      color: '#fff',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Alasan penolakan wajib dicantumkan agar pemohon dapat memperbaiki!';
+        }
+      },
+    });
+
+    if (notes) {
+      try {
+        await partnerApplicationService.review(app.id, 'REJECTED', notes.trim());
+        Swal.fire({
+          icon: 'info',
+          title: 'Pengajuan Ditolak',
+          text: 'Status pengajuan telah diubah menjadi REJECTED.',
+          timer: 1800,
+          showConfirmButton: false,
+          background: '#120a20',
+          color: '#fff',
+        });
+        fetchAdminData();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menolak',
+          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
+          background: '#120a20',
+          color: '#fff',
+        });
+      }
+    }
+  };
+
+  const handlePreviewKtp = (imageUrl: string, orgName: string) => {
+    Swal.fire({
+      title: `Foto KTP: ${orgName}`,
+      imageUrl: imageUrl,
+      imageAlt: `KTP ${orgName}`,
+      imageWidth: 500,
+      confirmButtonText: 'Tutup',
+      confirmButtonColor: '#FFD700',
+      background: '#120a20',
+      color: '#fff',
+    });
   };
 
   useEffect(() => {
@@ -317,6 +437,21 @@ export const AdminDashboardPage: React.FC = () => {
             >
               <i className="fas fa-users-gear text-info"></i>
               <span>Kelola Pengguna ({totalUsers})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('partners')}
+              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer d-flex align-items-center justify-content-between ${activeTab === 'partners' ? 'active' : ''}`}
+            >
+              <div className="d-flex align-items-center gap-2">
+                <i className="fas fa-id-card text-warning"></i>
+                <span>Verifikasi Mitra (KYC)</span>
+              </div>
+              {pendingPartnerCount > 0 && (
+                <span className="badge bg-danger rounded-pill font-monospace" style={{ fontSize: '10px' }}>
+                  {pendingPartnerCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -761,6 +896,181 @@ export const AdminDashboardPage: React.FC = () => {
                               </button>
                             )}
                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: VERIFIKASI KEMITRAAN PENYELENGGARA (KYC / B2B Onboarding) */}
+        {(activeTab === 'overview' || activeTab === 'partners') && (
+          <div className="luxury-glass-card p-4 mb-4">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <div>
+                <h3 className="kikk-title m-0 fs-5">
+                  <i className="fas fa-id-card text-warning me-2"></i> Verifikasi Kemitraan Penyelenggara (KYC)
+                </h3>
+                <p className="text-secondary small m-0 mt-1">
+                  Kurasi resmi berkas identitas &amp; rekening bank sebelum akun diaktifkan sebagai Penyelenggara Acara.
+                </p>
+              </div>
+
+              {/* Status Filter Badges */}
+              <div className="d-flex gap-1">
+                {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setPartnerStatusFilter(st)}
+                    className={`btn btn-sm py-1 px-3 ${
+                      partnerStatusFilter === st
+                        ? 'btn-warning text-dark fw-bold'
+                        : 'btn-outline-secondary text-secondary'
+                    }`}
+                    style={{ fontSize: '11px', borderRadius: '8px' }}
+                  >
+                    {st === 'ALL'
+                      ? `Semua (${partnerApplications.length})`
+                      : st === 'PENDING'
+                      ? `Menunggu (${partnerApplications.filter((p) => p.status === 'PENDING').length})`
+                      : st === 'APPROVED'
+                      ? 'Disetujui'
+                      : 'Ditolak'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {filteredPartners.length === 0 ? (
+              <div className="text-center py-5">
+                <i className="fas fa-clipboard-check text-warning fs-1 mb-3 opacity-50"></i>
+                <h6 className="text-white fw-bold">Tidak Ada Antrean Pengajuan</h6>
+                <p className="text-secondary small mb-0">
+                  {partnerStatusFilter === 'ALL'
+                    ? 'Belum ada pengguna yang mengirimkan formulir kemitraan.'
+                    : `Tidak ada berkas dengan status ${partnerStatusFilter}.`}
+                </p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
+                  <thead>
+                    <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
+                      <th className="py-3">ORGANISASI / PEMOHON</th>
+                      <th className="py-3">IDENTITAS (NIK)</th>
+                      <th className="py-3">REKENING PENCAIRAN</th>
+                      <th className="py-3">TANGGAL</th>
+                      <th className="py-3">STATUS</th>
+                      <th className="py-3 text-end">AKSI KURASI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPartners.map((app) => (
+                      <tr key={app.id} style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
+                        <td className="py-3">
+                          <div>
+                            <div className="fw-bold text-white fs-6">{app.organizationName}</div>
+                            <div className="text-warning small">
+                              <i className="fas fa-user me-1"></i> {app.userName}
+                            </div>
+                            <div className="text-secondary small" style={{ fontSize: '11px' }}>
+                              {app.userEmail} {app.userPhone ? `• ${app.userPhone}` : ''}
+                            </div>
+                            {app.reason && (
+                              <div className="text-secondary fst-italic mt-1" style={{ fontSize: '11px', maxWidth: '300px' }}>
+                                &ldquo;{app.reason}&rdquo;
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <div className="font-monospace text-white small fw-bold">{app.idCardNumber}</div>
+                            {app.idCardImage ? (
+                              <button
+                                onClick={() => handlePreviewKtp(app.idCardImage, app.organizationName)}
+                                className="btn btn-sm btn-outline-warning py-0 px-2 mt-1"
+                                style={{ fontSize: '10px', borderRadius: '6px' }}
+                              >
+                                <i className="fas fa-image me-1"></i> Lihat Foto KTP
+                              </button>
+                            ) : (
+                              <span className="text-secondary small">Tanpa Foto</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <span className="badge bg-secondary text-white mb-1" style={{ fontSize: '10px' }}>
+                              {app.bankName}
+                            </span>
+                            <div className="font-monospace text-white small">{app.bankAccountNumber}</div>
+                            <div className="text-secondary" style={{ fontSize: '11px' }}>
+                              a.n {app.bankAccountHolder}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-secondary small">
+                          <div>{app.createdAt ? app.createdAt.substring(0, 10) : '-'}</div>
+                          <div style={{ fontSize: '10px', opacity: 0.6 }}>
+                            {app.createdAt ? app.createdAt.substring(11, 16) : ''}
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              app.status === 'APPROVED'
+                                ? 'bg-success text-white'
+                                : app.status === 'PENDING'
+                                ? 'bg-warning text-dark'
+                                : 'bg-danger text-white'
+                            }`}
+                            style={{ padding: '5px 10px', borderRadius: '6px', fontSize: '10px', letterSpacing: '0.5px' }}
+                          >
+                            {app.status === 'APPROVED' ? 'DISETUJUI' : app.status === 'PENDING' ? 'MENUNGGU' : 'DITOLAK'}
+                          </span>
+                          {app.adminNotes && (
+                            <div className="text-danger small mt-1" style={{ fontSize: '10px', maxWidth: '180px' }}>
+                              Note: {app.adminNotes}
+                            </div>
+                          )}
+                        </td>
+                        <td className="text-end py-3">
+                          {app.status === 'PENDING' ? (
+                            <div className="d-flex justify-content-end gap-2">
+                              <button
+                                onClick={() => handleApprovePartner(app)}
+                                className="btn btn-sm btn-success py-1 px-3 fw-bold"
+                                style={{ fontSize: '11px', borderRadius: '6px' }}
+                                title="Setujui dan promosikan akun ke ORGANIZER"
+                              >
+                                <i className="fas fa-check me-1"></i> Setujui
+                              </button>
+                              <button
+                                onClick={() => handleRejectPartner(app)}
+                                className="btn btn-sm btn-outline-danger py-1 px-2"
+                                style={{ fontSize: '11px', borderRadius: '6px' }}
+                                title="Tolak pengajuan dengan catatan"
+                              >
+                                <i className="fas fa-times me-1"></i> Tolak
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-secondary small fst-italic">
+                              {app.status === 'APPROVED' ? (
+                                <span className="text-success small">
+                                  <i className="fas fa-check-double me-1"></i> Aktif sebagai Organizer
+                                </span>
+                              ) : (
+                                <span className="text-danger small">
+                                  <i className="fas fa-ban me-1"></i> Ditolak
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}

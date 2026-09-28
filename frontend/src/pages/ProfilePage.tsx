@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mediaService } from '../services/mediaService';
+import { partnerApplicationService, PartnerApplication } from '../services/partnerApplicationService';
 import { UserFloatingDock } from '../components/UserFloatingDock';
 import Swal from 'sweetalert2';
 
@@ -9,9 +10,27 @@ export const ProfilePage: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ktpInputRef = useRef<HTMLInputElement>(null);
 
   const [userBio, setUserBio] = useState(() => localStorage.getItem('user_bio') || 'Event Enthusiast & Music Lover');
   const [userCity, setUserCity] = useState(() => localStorage.getItem('user_city') || 'Jakarta, Indonesia');
+
+  // KYC Partner Application States
+  const [partnerApp, setPartnerApp] = useState<PartnerApplication | null>(null);
+  const [isLoadingApp, setIsLoadingApp] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [isUploadingKtp, setIsUploadingKtp] = useState(false);
+  const [isSubmittingApp, setIsSubmittingApp] = useState(false);
+
+  const [formData, setFormData] = useState({
+    organizationName: '',
+    idCardNumber: '',
+    idCardImage: '',
+    bankName: 'BCA',
+    bankAccountNumber: '',
+    bankAccountHolder: '',
+    reason: '',
+  });
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,25 +91,141 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleOrganizerInquiry = () => {
+  useEffect(() => {
+    if (user?.role === 'USER') {
+      loadPartnerApplication();
+    }
+  }, [user?.role]);
+
+  const loadPartnerApplication = async () => {
+    setIsLoadingApp(true);
+    try {
+      const app = await partnerApplicationService.getMyApplication();
+      setPartnerApp(app);
+      if (app) {
+        setFormData({
+          organizationName: app.organizationName || '',
+          idCardNumber: app.idCardNumber || '',
+          idCardImage: app.idCardImage || '',
+          bankName: app.bankName || 'BCA',
+          bankAccountNumber: app.bankAccountNumber || '',
+          bankAccountHolder: app.bankAccountHolder || '',
+          reason: app.reason || '',
+        });
+      }
+    } catch (err) {
+      console.error('Gagal memuat status pengajuan kemitraan', err);
+    } finally {
+      setIsLoadingApp(false);
+    }
+  };
+
+  const handleKtpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Ukuran Terlalu Besar',
+        text: 'Batas maksimal berkas identitas adalah 5 MB.',
+        background: '#120a20',
+        color: '#fff',
+      });
+      return;
+    }
+
+    setIsUploadingKtp(true);
+    try {
+      const res = await mediaService.uploadImage(file, 'kyc');
+      setFormData((prev) => ({ ...prev, idCardImage: res.url }));
+      Swal.fire({
+        icon: 'success',
+        title: 'Dokumen Terunggah',
+        text: 'Foto identitas berhasil disimpan.',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#120a20',
+        color: '#fff',
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Unggah',
+        text: err.response?.data?.message || 'Gagal mengunggah foto identitas.',
+        background: '#120a20',
+        color: '#fff',
+      });
+    } finally {
+      setIsUploadingKtp(false);
+      if (ktpInputRef.current) ktpInputRef.current.value = '';
+    }
+  };
+
+  const handleSubmitApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.organizationName.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Nama Organisasi / EO wajib diisi.', background: '#120a20', color: '#fff' });
+      return;
+    }
+    if (!formData.idCardNumber.trim() || formData.idCardNumber.length < 10) {
+      Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Nomor NIK / KTP minimal 10 digit angka.', background: '#120a20', color: '#fff' });
+      return;
+    }
+    if (!formData.idCardImage) {
+      Swal.fire({ icon: 'warning', title: 'Dokumen Belum Diunggah', text: 'Silakan unggah foto KTP atau identitas penanggung jawab.', background: '#120a20', color: '#fff' });
+      return;
+    }
+    if (!formData.bankAccountNumber.trim() || !formData.bankAccountHolder.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Nomor rekening dan nama pemilik rekening pencairan dana wajib diisi.', background: '#120a20', color: '#fff' });
+      return;
+    }
+
+    setIsSubmittingApp(true);
+    try {
+      const submitted = await partnerApplicationService.submit(formData);
+      setPartnerApp(submitted);
+      setShowApplyModal(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Pengajuan Berhasil Dikirim',
+        text: 'Berkas verifikasi kemitraan Anda telah diterima dan sedang ditinjau oleh Super Administrator.',
+        background: '#120a20',
+        color: '#fff',
+        confirmButtonColor: '#FFD700',
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengirim Pengajuan',
+        text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
+        background: '#120a20',
+        color: '#fff',
+      });
+    } finally {
+      setIsSubmittingApp(false);
+    }
+  };
+
+  const handleViewApplicationDetail = (app: PartnerApplication) => {
     Swal.fire({
-      title: 'Program Kemitraan Penyelenggara',
+      title: 'Berkas Pengajuan Kemitraan',
       html: `
         <div style="text-align:left;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6">
-          <p>EventEase menerapkan sistem <strong>Curated &amp; Enterprise (Model B)</strong> untuk menjaga integritas seluruh acara dan perlindungan mutlak bagi pembeli tiket.</p>
-          <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px">
-            <div style="font-weight:600;color:#FFD700;margin-bottom:4px"><i class="fas fa-shield-alt me-1"></i> Syarat Verifikasi Penyelenggara:</div>
-            <ul style="margin:0;padding-left:18px;color:rgba(255,255,255,0.75)">
-              <li>KTP Penanggung Jawab / Legalitas Badan Usaha / Komunitas</li>
-              <li>Rekening Bank Resmi atas nama Penyelenggara</li>
-              <li>Persetujuan Super Admin melalui Panel Manajemen</li>
-            </ul>
+          <div style="padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:10px;margin-bottom:12px">
+            <div><strong style="color:#FFD700">Organisasi:</strong> ${app.organizationName}</div>
+            <div><strong style="color:#FFD700">No. NIK/KTP:</strong> ${app.idCardNumber}</div>
+            <div><strong style="color:#FFD700">Rekening:</strong> ${app.bankName} - ${app.bankAccountNumber} (a.n ${app.bankAccountHolder})</div>
+            ${app.reason ? `<div><strong style="color:#FFD700">Rencana Acara:</strong> ${app.reason}</div>` : ''}
           </div>
-          <p style="margin-bottom:0">Untuk mengajukan akun Organizer atau upgrade akun ini, silakan hubungi tim Administrator melalui WhatsApp atau email resmi: <strong>support@eventease.com</strong>.</p>
+          <div style="text-align:center;margin-top:10px">
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px">FOTO IDENTITAS TERUNGGAH:</div>
+            <img src="${app.idCardImage}" alt="KTP" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid rgba(255,215,0,0.3);object-fit:contain" />
+          </div>
         </div>
       `,
-      icon: 'info',
-      confirmButtonText: 'Saya Mengerti',
+      confirmButtonText: 'Tutup',
       confirmButtonColor: '#FFD700',
       background: '#120a20',
       color: '#fff',
@@ -241,42 +376,163 @@ export const ProfilePage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Curated Tier: Organizer Partnership Information */}
-              {user?.role === 'USER' && (
+              {/* Curated Tier: Organizer Partnership KYC Section */}
+              {user?.role === 'ORGANIZER' && (
                 <div
                   className="mt-4 p-3 rounded-4"
                   style={{
-                    background: 'rgba(255, 215, 0, 0.03)',
-                    border: '1px dashed rgba(255, 215, 0, 0.25)',
+                    background: 'rgba(34, 197, 94, 0.08)',
+                    border: '1px solid rgba(34, 197, 94, 0.25)',
                   }}
                 >
                   <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div className="d-flex align-items-center gap-3">
                       <div
-                        className="rounded-circle d-flex align-items-center justify-content-center text-warning"
-                        style={{ width: '40px', height: '40px', background: 'rgba(255, 215, 0, 0.1)', flexShrink: 0 }}
+                        className="rounded-circle d-flex align-items-center justify-content-center text-success"
+                        style={{ width: '42px', height: '42px', background: 'rgba(34, 197, 94, 0.15)', flexShrink: 0 }}
                       >
-                        <i className="fas fa-bullhorn" style={{ fontSize: '15px' }}></i>
+                        <i className="fas fa-certificate" style={{ fontSize: '18px' }}></i>
                       </div>
                       <div>
-                        <div className="fw-bold text-white" style={{ fontSize: '13px' }}>
-                          Ingin Menjadi Penyelenggara Acara?
+                        <div className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '13px' }}>
+                          <span>Penyelenggara Resmi Terverifikasi</span>
+                          <span className="badge bg-success" style={{ fontSize: '10px' }}>VERIFIED</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.55)' }}>
-                          EventEase menerapkan sistem kurasi terverifikasi oleh Super Admin untuk keamanan platform.
+                        <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.65)' }}>
+                          Akun Anda memiliki izin resmi untuk menerbitkan tiket dan menyelenggarakan acara di EventEase.
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleOrganizerInquiry}
-                      className="btn-kikk-outline btn-sm py-1 px-3"
+                    <Link
+                      to="/dashboard"
+                      className="btn-kikk btn-sm py-1 px-3"
                       style={{ fontSize: '11px', borderRadius: '10px' }}
                     >
-                      <i className="fas fa-info-circle me-1"></i> Info Kemitraan
-                    </button>
+                      <i className="fas fa-tachometer-alt me-1"></i> Buka Konsol Organizer
+                    </Link>
                   </div>
                 </div>
+              )}
+
+              {user?.role === 'USER' && (
+                <>
+                  {partnerApp?.status === 'PENDING' ? (
+                    <div
+                      className="mt-4 p-3 rounded-4"
+                      style={{
+                        background: 'rgba(234, 179, 8, 0.08)',
+                        border: '1px solid rgba(234, 179, 8, 0.25)',
+                      }}
+                    >
+                      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center text-warning"
+                            style={{ width: '42px', height: '42px', background: 'rgba(234, 179, 8, 0.15)', flexShrink: 0 }}
+                          >
+                            <i className="fas fa-clock" style={{ fontSize: '18px' }}></i>
+                          </div>
+                          <div>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="fw-bold text-white" style={{ fontSize: '13px' }}>
+                                Pengajuan Kemitraan Penyelenggara
+                              </span>
+                              <span className="badge bg-warning text-dark font-monospace" style={{ fontSize: '10px' }}>
+                                MENUNGGU VERIFIKASI
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.65)', marginTop: '2px' }}>
+                              Organisasi: <strong>{partnerApp.organizationName}</strong> | Rekening: {partnerApp.bankName} ({partnerApp.bankAccountNumber})
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleViewApplicationDetail(partnerApp)}
+                          className="btn-kikk-outline btn-sm py-1 px-3"
+                          style={{ fontSize: '11px', borderRadius: '10px' }}
+                        >
+                          <i className="fas fa-eye me-1"></i> Rincian Berkas
+                        </button>
+                      </div>
+                    </div>
+                  ) : partnerApp?.status === 'REJECTED' ? (
+                    <div
+                      className="mt-4 p-3 rounded-4"
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                      }}
+                    >
+                      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center text-danger"
+                            style={{ width: '42px', height: '42px', background: 'rgba(239, 68, 68, 0.15)', flexShrink: 0 }}
+                          >
+                            <i className="fas fa-exclamation-circle" style={{ fontSize: '18px' }}></i>
+                          </div>
+                          <div>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="fw-bold text-white" style={{ fontSize: '13px' }}>
+                                Pengajuan Kemitraan Belum Disetujui
+                              </span>
+                              <span className="badge bg-danger" style={{ fontSize: '10px' }}>
+                                PERLU REVISI
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#fca5a5', marginTop: '2px' }}>
+                              Catatan Admin: {partnerApp.adminNotes || 'Dokumen belum memenuhi kualifikasi.'}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowApplyModal(true)}
+                          className="btn-kikk btn-sm py-1 px-3"
+                          style={{ fontSize: '11px', borderRadius: '10px' }}
+                        >
+                          <i className="fas fa-redo me-1"></i> Ajukan Ulang
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="mt-4 p-3 rounded-4"
+                      style={{
+                        background: 'rgba(255, 215, 0, 0.03)',
+                        border: '1px dashed rgba(255, 215, 0, 0.25)',
+                      }}
+                    >
+                      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center text-warning"
+                            style={{ width: '40px', height: '40px', background: 'rgba(255, 215, 0, 0.1)', flexShrink: 0 }}
+                          >
+                            <i className="fas fa-bullhorn" style={{ fontSize: '15px' }}></i>
+                          </div>
+                          <div>
+                            <div className="fw-bold text-white" style={{ fontSize: '13px' }}>
+                              Ingin Menjadi Penyelenggara Acara?
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.55)' }}>
+                              Daftarkan organisasi Anda untuk menyelenggarakan acara resmi dengan verifikasi aman Super Admin.
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowApplyModal(true)}
+                          className="btn-kikk btn-sm py-1 px-3"
+                          style={{ fontSize: '11px', borderRadius: '10px' }}
+                        >
+                          <i className="fas fa-id-card me-1"></i> Ajukan Kemitraan (KYC)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Quick Navigation */}
@@ -295,6 +551,245 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Hidden File Input for KTP Upload */}
+      <input
+        type="file"
+        ref={ktpInputRef}
+        onChange={handleKtpUpload}
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+      />
+
+      {/* Modal Formulir Pengajuan Kemitraan (KYC) */}
+      {showApplyModal && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{
+            zIndex: 1050,
+            background: 'rgba(6, 3, 12, 0.85)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div
+            className="luxury-glass-card anim-fade-in w-100"
+            style={{
+              maxWidth: '620px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '32px',
+              borderRadius: '24px',
+              border: '1px solid rgba(255, 215, 0, 0.3)',
+            }}
+          >
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <span style={{ fontSize: '10px', letterSpacing: '2px', color: '#FFD700', fontWeight: 700 }}>
+                  VERIFIKASI IDENTITAS &amp; LEGALITAS (KYC)
+                </span>
+                <h4 className="fw-bold text-white mb-0 mt-1">Formulir Kemitraan Penyelenggara</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowApplyModal(false)}
+                className="btn btn-sm btn-link text-white text-opacity-50 text-decoration-none fs-5 p-0"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.5 }}>
+              Sesuai kebijakan keamanan EventEase (Model B), seluruh Penyelenggara Acara wajib melengkapi verifikasi identitas resmi sebelum dapat menerbitkan tiket.
+            </p>
+
+            <form onSubmit={handleSubmitApplication}>
+              <div className="mb-3">
+                <label className="form-label text-warning small fw-bold mb-1">
+                  <i className="fas fa-building me-1"></i> Nama Badan Usaha / Organisasi / Komunitas *
+                </label>
+                <input
+                  type="text"
+                  className="kikk-form-control"
+                  placeholder="Contoh: Nada Nusantara Entertainment"
+                  value={formData.organizationName}
+                  onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label text-warning small fw-bold mb-1">
+                  <i className="fas fa-id-card me-1"></i> Nomor NIK / KTP Penanggung Jawab *
+                </label>
+                <input
+                  type="text"
+                  className="kikk-form-control"
+                  placeholder="16 digit nomor NIK KTP resmi"
+                  value={formData.idCardNumber}
+                  onChange={(e) => setFormData({ ...formData, idCardNumber: e.target.value.replace(/[^0-9]/g, '') })}
+                  maxLength={16}
+                  required
+                />
+              </div>
+
+              {/* Unggah Berkas KTP */}
+              <div className="mb-3">
+                <label className="form-label text-warning small fw-bold mb-1">
+                  <i className="fas fa-upload me-1"></i> Foto KTP / Identitas Asli *
+                </label>
+                <div
+                  className="p-3 rounded-3 text-center position-relative"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1.5px dashed rgba(255, 215, 0, 0.3)',
+                  }}
+                >
+                  {formData.idCardImage ? (
+                    <div className="d-flex align-items-center justify-content-between gap-3">
+                      <div className="d-flex align-items-center gap-3">
+                        <img
+                          src={formData.idCardImage}
+                          alt="Preview KTP"
+                          className="rounded"
+                          style={{ width: '80px', height: '52px', objectFit: 'cover', border: '1px solid rgba(255, 215, 0, 0.4)' }}
+                        />
+                        <div className="text-start">
+                          <div className="text-success small fw-bold">
+                            <i className="fas fa-check-circle me-1"></i> Foto KTP Terunggah
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>Siap diverifikasi</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => ktpInputRef.current?.click()}
+                        className="btn-kikk-outline btn-sm py-1 px-3"
+                        style={{ fontSize: '11px', borderRadius: '8px' }}
+                      >
+                        Ganti Foto
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <i className="fas fa-camera fs-3 text-warning opacity-50 mb-2"></i>
+                      <div className="text-white small fw-bold">Unggah Foto KTP Jelas &amp; Terbaca</div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', marginBottom: '10px' }}>
+                        Format JPG, PNG, atau WebP (Maks. 5 MB)
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => ktpInputRef.current?.click()}
+                        disabled={isUploadingKtp}
+                        className="btn-kikk btn-sm py-1 px-3"
+                        style={{ fontSize: '11px', borderRadius: '8px' }}
+                      >
+                        {isUploadingKtp ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin me-1"></i> Mengunggah...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-folder-open me-1"></i> Pilih Berkas Foto
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Rekening Bank */}
+              <div className="row g-2 mb-3">
+                <div className="col-md-4">
+                  <label className="form-label text-warning small fw-bold mb-1">
+                    <i className="fas fa-university me-1"></i> Bank *
+                  </label>
+                  <select
+                    className="kikk-form-control"
+                    value={formData.bankName}
+                    onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                  >
+                    <option value="BCA">Bank BCA</option>
+                    <option value="Mandiri">Bank Mandiri</option>
+                    <option value="BNI">Bank BNI</option>
+                    <option value="BRI">Bank BRI</option>
+                    <option value="Permata">Permata Bank</option>
+                    <option value="CIMB Niaga">CIMB Niaga</option>
+                    <option value="BSI">Bank Syariah Indonesia</option>
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label text-warning small fw-bold mb-1">
+                    <i className="fas fa-credit-card me-1"></i> No. Rekening *
+                  </label>
+                  <input
+                    type="text"
+                    className="kikk-form-control"
+                    placeholder="Nomor rekening"
+                    value={formData.bankAccountNumber}
+                    onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value.replace(/[^0-9]/g, '') })}
+                    required
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label text-warning small fw-bold mb-1">
+                    <i className="fas fa-user-check me-1"></i> Nama Pemilik *
+                  </label>
+                  <input
+                    type="text"
+                    className="kikk-form-control"
+                    placeholder="Sesuai buku tabungan"
+                    value={formData.bankAccountHolder}
+                    onChange={(e) => setFormData({ ...formData, bankAccountHolder: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Rencana Acara */}
+              <div className="mb-4">
+                <label className="form-label text-warning small fw-bold mb-1">
+                  <i className="fas fa-bullhorn me-1"></i> Rencana Acara &amp; Keterangan Tambahan
+                </label>
+                <textarea
+                  className="kikk-form-control"
+                  rows={2}
+                  placeholder="Contoh: Kami berencana mengadakan konser musik indie regional dan pameran seni..."
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                ></textarea>
+              </div>
+
+              <div className="d-flex justify-content-end gap-2 pt-2 border-top border-white border-opacity-10">
+                <button
+                  type="button"
+                  onClick={() => setShowApplyModal(false)}
+                  className="btn btn-sm btn-outline-secondary py-2 px-3"
+                  style={{ borderRadius: '10px', fontSize: '12px' }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingApp || isUploadingKtp}
+                  className="btn-kikk btn-sm py-2 px-4"
+                  style={{ borderRadius: '10px', fontSize: '12px' }}
+                >
+                  {isSubmittingApp ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin me-1"></i> Mengirim Pengajuan...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane me-1"></i> Kirim Berkas Pengajuan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Floating Island Navigation Dock */}
       <UserFloatingDock />
