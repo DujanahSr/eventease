@@ -130,97 +130,223 @@ export const HomePage: React.FC = () => {
             </form>
           </div>
 
-          {/* 4 Trust & Metrics Strips */}
-          <div className="row g-3 mt-4 pt-3 justify-content-center text-start anim-fade-in anim-delay-4">
-            <div className="col-6 col-lg-3">
-              <div className="stat-box-luxury">
-                <div
-                  className="rounded-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '44px', height: '44px', background: 'rgba(255,215,0,0.12)', color: 'var(--kikk-yellow)', fontSize: '1.2rem' }}
-                >
-                  <i className="fas fa-ticket-alt"></i>
-                </div>
-                <div>
-                  <div className="fw-bold text-white fs-5 lh-1">50.000+</div>
-                  <div className="text-secondary small mt-1">Tiket Terdistribusi</div>
-                </div>
-              </div>
-            </div>
+          {/* 4 Constellation Metrics — Orbital Nodes */}
+          <div className="anim-fade-in anim-delay-4" style={{ marginTop: '48px' }}>
+            {/* SVG Connector Lines (desktop only) */}
+            <svg
+              className="d-none d-lg-block"
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                width: '100%',
+                height: '2px',
+                marginTop: '55px',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            >
+              <line x1="12.5%" y1="1" x2="37.5%" y2="1" stroke="url(#constellationGrad)" strokeWidth="1" strokeDasharray="6 4" opacity="0.5">
+                <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="3s" repeatCount="indefinite" />
+              </line>
+              <line x1="37.5%" y1="1" x2="62.5%" y2="1" stroke="url(#constellationGrad)" strokeWidth="1" strokeDasharray="6 4" opacity="0.5">
+                <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="3s" repeatCount="indefinite" />
+              </line>
+              <line x1="62.5%" y1="1" x2="87.5%" y2="1" stroke="url(#constellationGrad)" strokeWidth="1" strokeDasharray="6 4" opacity="0.5">
+                <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="3s" repeatCount="indefinite" />
+              </line>
+              <defs>
+                <linearGradient id="constellationGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffd700" stopOpacity="0" />
+                  <stop offset="50%" stopColor="#ffd700" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
 
-            <div className="col-6 col-lg-3">
-              <div className="stat-box-luxury">
-                <div
-                  className="rounded-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '44px', height: '44px', background: 'rgba(59,130,246,0.12)', color: '#60a5fa', fontSize: '1.2rem' }}
-                >
-                  <i className="fas fa-qrcode"></i>
+            <div className="row g-0 justify-content-center position-relative" style={{ zIndex: 1 }}>
+              {[
+                { value: '50.000+', label: 'Tiket Terdistribusi', icon: 'fa-ticket-alt', color: '#ffd700', bg: 'rgba(255,215,0,0.08)', ring: 'rgba(255,215,0,0.25)' },
+                { value: '< 1 Dtk', label: 'Scan Gate In Live', icon: 'fa-bolt', color: '#60a5fa', bg: 'rgba(59,130,246,0.08)', ring: 'rgba(59,130,246,0.25)' },
+                { value: 'Anti-Scalp', label: 'Token Bucket Redis', icon: 'fa-shield-alt', color: '#c084fc', bg: 'rgba(168,85,247,0.08)', ring: 'rgba(168,85,247,0.25)' },
+                { value: 'Excel POI', label: 'Ekspor Laporan Instan', icon: 'fa-file-invoice', color: '#4ade80', bg: 'rgba(34,197,94,0.08)', ring: 'rgba(34,197,94,0.25)' },
+              ].map((stat, idx) => (
+                <div className="col-6 col-lg-3" key={idx}>
+                  <div
+                    className="constellation-node"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      padding: '28px 12px',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Orbital Ring */}
+                    <div
+                      style={{
+                        width: '88px',
+                        height: '88px',
+                        borderRadius: '50%',
+                        border: `2px solid ${stat.ring}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        marginBottom: '18px',
+                        background: stat.bg,
+                        animation: `orbitPulse 3s ease-in-out ${idx * 0.4}s infinite`,
+                      }}
+                    >
+                      {/* Orbiting dot */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: stat.color,
+                          boxShadow: `0 0 12px ${stat.color}`,
+                          top: '-4px',
+                          left: '50%',
+                          marginLeft: '-4px',
+                          animation: `orbitDot 4s linear ${idx * 0.6}s infinite`,
+                          transformOrigin: '4px 48px',
+                        }}
+                      />
+                      <i className={`fas ${stat.icon}`} style={{ fontSize: '1.6rem', color: stat.color }} />
+                    </div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', marginTop: '6px', letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 500 }}>
+                      {stat.label}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="fw-bold text-white fs-5 lh-1">&lt; 1 Detik</div>
-                  <div className="text-secondary small mt-1">Scan Gate In Live</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-6 col-lg-3">
-              <div className="stat-box-luxury">
-                <div
-                  className="rounded-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '44px', height: '44px', background: 'rgba(168,85,247,0.12)', color: '#c084fc', fontSize: '1.2rem' }}
-                >
-                  <i className="fas fa-shield-alt"></i>
-                </div>
-                <div>
-                  <div className="fw-bold text-white fs-5 lh-1">Anti-Scalper</div>
-                  <div className="text-secondary small mt-1">Token Bucket Redis</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-6 col-lg-3">
-              <div className="stat-box-luxury">
-                <div
-                  className="rounded-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '44px', height: '44px', background: 'rgba(34,197,94,0.12)', color: '#4ade80', fontSize: '1.2rem' }}
-                >
-                  <i className="fas fa-file-excel"></i>
-                </div>
-                <div>
-                  <div className="fw-bold text-white fs-5 lh-1">Excel 5.3</div>
-                  <div className="text-secondary small mt-1">Ekspor Laporan Cepat</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Category Quick Pills Strip */}
-      <section className="py-4 border-top border-bottom" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(11, 6, 22, 0.7)' }}>
-        <div className="container">
-          <div className="d-flex align-items-center gap-2 overflow-auto py-2 no-scrollbar">
-            <span className="text-secondary small text-uppercase fw-semibold me-2 d-none d-md-inline" style={{ letterSpacing: '1px' }}>
-              <i className="fas fa-compass me-1 text-warning"></i> Kategori:
-            </span>
+      {/* 2. Orbital Category Selector */}
+      <section
+        style={{
+          padding: '32px 0',
+          background: 'linear-gradient(180deg, rgba(11,6,22,0.85) 0%, rgba(15,10,30,0.6) 100%)',
+          borderTop: '1px solid rgba(255,215,0,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Ambient glow behind categories */}
+        <div
+          style={{
+            position: 'absolute',
+            width: '400px',
+            height: '120px',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse, rgba(255,215,0,0.06) 0%, transparent 70%)',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <div className="container position-relative" style={{ zIndex: 1 }}>
+          <div className="d-flex align-items-center justify-content-center flex-wrap gap-3 py-1">
+            {/* "All" orbital tag */}
             <button
               type="button"
-              className={`category-pill ${selectedCategory === '' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('')}
+              className="orbital-category-tag"
+              style={{
+                background: selectedCategory === '' ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.02)',
+                border: selectedCategory === '' ? '1.5px solid rgba(255,215,0,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+                borderRadius: '50px',
+                padding: '10px 24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                color: selectedCategory === '' ? '#fff' : 'rgba(255,255,255,0.6)',
+                fontSize: '0.88rem',
+                fontWeight: selectedCategory === '' ? 600 : 400,
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: selectedCategory === '' ? '0 0 20px rgba(255,215,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)' : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+              }}
             >
-              <i className="fas fa-layer-group"></i>
+              <span
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: selectedCategory === '' ? '#ffd700' : 'rgba(255,255,255,0.2)',
+                  boxShadow: selectedCategory === '' ? '0 0 8px #ffd700' : 'none',
+                  transition: 'all 0.3s ease',
+                  flexShrink: 0,
+                }}
+              />
               <span>Semua Acara</span>
             </button>
-            {categories.map((cat) => (
-              <button
-                type="button"
-                key={cat.id}
-                className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? '' : cat.id)}
-              >
-                <i className={`fas ${getCategoryIcon(cat.name)}`}></i>
-                <span>{cat.name}</span>
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              const iconClass = getCategoryIcon(cat.name);
+              // Extract color from icon class
+              const colorMap: Record<string, string> = {
+                'text-warning': '#fbbf24',
+                'text-info': '#22d3ee',
+                'text-danger': '#f87171',
+                'text-success': '#4ade80',
+                'text-primary': '#60a5fa',
+              };
+              const colorKey = iconClass.split(' ').find((c: string) => c.startsWith('text-')) || 'text-warning';
+              const dotColor = colorMap[colorKey] || '#fbbf24';
+              return (
+                <button
+                  type="button"
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(isActive ? '' : cat.id)}
+                  className="orbital-category-tag"
+                  style={{
+                    background: isActive ? `${dotColor}14` : 'rgba(255,255,255,0.02)',
+                    border: isActive ? `1.5px solid ${dotColor}80` : '1.5px solid rgba(255,255,255,0.08)',
+                    borderRadius: '50px',
+                    padding: '10px 24px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                    color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
+                    fontSize: '0.88rem',
+                    fontWeight: isActive ? 600 : 400,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: isActive ? `0 0 20px ${dotColor}1a, inset 0 1px 0 rgba(255,255,255,0.06)` : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: isActive ? dotColor : 'rgba(255,255,255,0.2)',
+                      boxShadow: isActive ? `0 0 8px ${dotColor}` : 'none',
+                      transition: 'all 0.3s ease',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <i className={`fas ${iconClass.split(' ')[0]}`} style={{ fontSize: '0.82rem', color: isActive ? dotColor : 'rgba(255,255,255,0.35)' }} />
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
