@@ -26,14 +26,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+
       if (storedToken) {
         try {
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
           localStorage.setItem('user', JSON.stringify(currentUser));
         } catch {
-          // Token invalid or expired
-          logout();
+          // If access token invalid, attempt to recover using refresh token
+          if (storedRefreshToken) {
+            try {
+              const freshAuth = await authService.refreshToken(storedRefreshToken);
+              setToken(freshAuth.accessToken);
+              setUser(freshAuth.user);
+              localStorage.setItem('token', freshAuth.accessToken);
+              if (freshAuth.refreshToken) {
+                localStorage.setItem('refreshToken', freshAuth.refreshToken);
+              }
+              localStorage.setItem('user', JSON.stringify(freshAuth.user));
+              setIsLoading(false);
+              return;
+            } catch {
+              logout();
+            }
+          } else {
+            logout();
+          }
         }
       }
       setIsLoading(false);
@@ -47,6 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(authData.accessToken);
     setUser(authData.user);
     localStorage.setItem('token', authData.accessToken);
+    if (authData.refreshToken) {
+      localStorage.setItem('refreshToken', authData.refreshToken);
+    }
     localStorage.setItem('user', JSON.stringify(authData.user));
     return authData.user;
   };
@@ -56,6 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(authData.accessToken);
     setUser(authData.user);
     localStorage.setItem('token', authData.accessToken);
+    if (authData.refreshToken) {
+      localStorage.setItem('refreshToken', authData.refreshToken);
+    }
     localStorage.setItem('user', JSON.stringify(authData.user));
     return authData.user;
   };

@@ -49,8 +49,14 @@ export const authService = {
     return res.data.data;
   },
 
+  async refreshToken(token: string): Promise<AuthResponseData> {
+    const res = await api.post<ApiResponse<AuthResponseData>>('/auth/refresh', { refreshToken: token });
+    return res.data.data;
+  },
+
   logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   },
 };

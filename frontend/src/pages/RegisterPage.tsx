@@ -203,6 +203,17 @@ export const RegisterPage: React.FC = () => {
           maxWidth: '540px',
         }}
       >
+        {/* Explicit Back to Home Navigation */}
+        <div className="mb-3">
+          <Link
+            to="/"
+            className="btn-kikk-outline btn-sm d-inline-flex align-items-center gap-2 py-2 px-3"
+            style={{ borderRadius: '10px', fontSize: '13px', textDecoration: 'none' }}
+          >
+            <i className="fas fa-arrow-left"></i> Kembali ke Beranda
+          </Link>
+        </div>
+
         <div
           className="luxury-glass-card pattern-wireframe-card"
           style={{
@@ -210,11 +221,11 @@ export const RegisterPage: React.FC = () => {
             border: '1px solid rgba(255, 215, 0, 0.25)',
           }}
         >
-          {/* Header Brand */}
+          {/* Header Brand - Non-navigational brand identity */}
           <div className="auth-header text-center mb-4">
-            <Link to="/" className="d-inline-flex justify-content-center mb-2 text-decoration-none">
+            <div className="d-inline-flex justify-content-center mb-2">
               <EventEaseLogo size="lg" />
-            </Link>
+            </div>
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '8px 0 0 0' }}>
               Daftarkan akun baru untuk pengalaman tiket kelas dunia
             </p>
