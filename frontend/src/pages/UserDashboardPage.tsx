@@ -37,23 +37,35 @@ export const UserDashboardPage: React.FC = () => {
     <div className="position-relative min-vh-100" style={{ backgroundColor: '#0a0514', color: '#fff' }}>
 
       {/* ═══ SECTION 1: PLATFORM INFO HERO BANNER ═══ */}
-      <section className="position-relative overflow-hidden" style={{ minHeight: '400px' }}>
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          backgroundImage: "url('/images/user_dashboard_bg.jpg')",
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(0.45) saturate(1.2)',
-        }} />
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: 'linear-gradient(180deg, rgba(10,5,20,0.2) 0%, rgba(10,5,20,0.92) 100%)',
-        }} />
+      <section className="position-relative overflow-hidden" style={{ minHeight: '440px' }}>
+        {/* Cinematic Background Image - Vibrant & Clearly Visible */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundImage: "url('/images/user_dashboard_bg.jpg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 35%',
+            opacity: 1,
+            transform: 'scale(1.02)',
+            transition: 'transform 10s ease-out',
+          }}
+        />
+        {/* Soft Vignette Overlay: Keeps text razor-sharp on the left while letting the gold silk & sparkles shine */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(10,5,20,0.88) 0%, rgba(10,5,20,0.55) 45%, rgba(10,5,20,0.25) 100%), linear-gradient(180deg, rgba(10,5,20,0.3) 0%, transparent 50%, rgba(10,5,20,0.98) 100%)',
+          }}
+        />
 
-        <div className="container position-relative" style={{ zIndex: 1, paddingTop: '100px', paddingBottom: '60px' }}>
+        <div className="container position-relative" style={{ zIndex: 1, paddingTop: '100px', paddingBottom: '65px' }}>
           <div className="row align-items-center g-5">
             <div className="col-lg-7">
               <span style={{
                 fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase',
                 color: '#FFD700', fontWeight: 700, display: 'inline-block', marginBottom: '20px',
-                borderBottom: '2px solid rgba(255,215,0,0.3)', paddingBottom: '6px',
+                borderBottom: '2px solid rgba(255,215,0,0.35)', paddingBottom: '6px',
               }}>
                 <i className="fas fa-bolt me-1" /> SELAMAT DATANG, {firstName.toUpperCase()}
               </span>
@@ -63,14 +75,18 @@ export const UserDashboardPage: React.FC = () => {
                 fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
                 fontWeight: 700, lineHeight: 1.08, margin: '0 0 20px',
                 letterSpacing: '-1.5px',
+                textShadow: '0 4px 20px rgba(0,0,0,0.7)',
               }}>
                 Temukan Konser &<br />
-                <span style={{ color: '#FFD700', fontStyle: 'italic' }}>Pengalaman Terbaik</span>
+                <span style={{ color: '#FFD700', fontStyle: 'italic', textShadow: '0 0 30px rgba(255,215,0,0.35)' }}>
+                  Pengalaman Terbaik
+                </span>
               </h1>
 
               <p style={{
-                color: 'rgba(255,255,255,0.5)', fontSize: '1rem',
+                color: 'rgba(255,255,255,0.75)', fontSize: '1rem',
                 lineHeight: 1.7, maxWidth: '480px', margin: '0 0 32px',
+                textShadow: '0 2px 10px rgba(0,0,0,0.6)',
               }}>
                 Platform tiket digital terdepan dengan proteksi anti-calo Token Bucket,
                 validasi gerbang real-time WebSocket STOMP, dan pembayaran instan Midtrans Snap.
@@ -96,21 +112,24 @@ export const UserDashboardPage: React.FC = () => {
                 ].map((item, i) => (
                   <div key={i} className="d-flex align-items-start gap-3" style={{
                     padding: '16px 20px', borderRadius: '18px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    backdropFilter: 'blur(8px)',
+                    background: 'rgba(18, 10, 32, 0.72)',
+                    border: '1px solid rgba(255, 215, 0, 0.16)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.45)',
                     transition: 'all 0.3s ease',
                   }}>
                     <div style={{
                       width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
-                      background: `${item.color}14`, display: 'flex',
+                      background: `${item.color}18`, display: 'flex',
                       alignItems: 'center', justifyContent: 'center',
+                      border: `1px solid ${item.color}35`,
                     }}>
                       <i className={`fas ${item.icon}`} style={{ color: item.color, fontSize: '16px' }} />
                     </div>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>{item.title}</div>
-                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{item.desc}</div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{item.desc}</div>
                     </div>
                   </div>
                 ))}
