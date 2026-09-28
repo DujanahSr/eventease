@@ -1,20 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingService, BookingResponseData } from '../services/bookingService';
-import { mediaService } from '../services/mediaService';
 import { UserFloatingDock } from '../components/UserFloatingDock';
-import Swal from 'sweetalert2';
 
 export const UserDashboardPage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<BookingResponseData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [userBio, setUserBio] = useState<string>(() => localStorage.getItem('user_bio') || 'Event Enthusiast & Music Lover');
-  const [userCity, setUserCity] = useState<string>(() => localStorage.getItem('user_city') || 'Jakarta, Indonesia');
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -34,65 +27,6 @@ export const UserDashboardPage: React.FC = () => {
   const fmt = (val: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      Swal.fire({ icon: 'warning', title: 'Ukuran Terlalu Besar', text: 'Batas maksimal foto profil adalah 5 MB.' });
-      return;
-    }
-    setIsUploadingAvatar(true);
-    try {
-      Swal.fire({ title: 'Mengunggah Foto Profil...', text: 'Menyimpan ke Cloud Storage...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await mediaService.uploadImage(file, 'avatars');
-      await updateProfile({ profilePicture: res.url });
-      Swal.fire({ icon: 'success', title: 'Foto Profil Diperbarui', timer: 1800, showConfirmButton: false });
-    } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'Gagal Mengunggah', text: err.response?.data?.message || 'Terjadi kesalahan.' });
-    } finally {
-      setIsUploadingAvatar(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleEditProfile = async () => {
-    const { value: v } = await Swal.fire({
-      title: 'Pengaturan Profil', width: 560,
-      html: `
-        <div style="text-align:left;font-size:14px;margin-top:15px">
-          <div style="margin-bottom:16px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;display:flex;justify-content:space-between;align-items:center">
-            <div><div style="font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:0.5px">EMAIL</div><div style="color:#fff;font-weight:600;font-size:13px">${user?.email || '-'}</div></div>
-            <span style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);padding:3px 8px;border-radius:6px;font-size:11px"><i class="fas fa-shield-alt"></i> Terverifikasi</span>
-          </div>
-          <div style="margin-bottom:14px"><label style="display:block;margin-bottom:6px;font-weight:600;color:#FFD700;font-size:13px"><i class="fas fa-user me-2"></i>Nama Lengkap</label><input id="swal-input-name" class="swal2-input" style="width:100%;margin:0;box-sizing:border-box" value="${user?.name || ''}" placeholder="Nama lengkap"></div>
-          <div style="margin-bottom:14px"><label style="display:block;margin-bottom:6px;font-weight:600;color:#FFD700;font-size:13px"><i class="fab fa-whatsapp me-2"></i>WhatsApp</label><input id="swal-input-phone" class="swal2-input" style="width:100%;margin:0;box-sizing:border-box" value="${user?.phone || ''}" placeholder="081234567890"></div>
-          <div style="margin-bottom:14px"><label style="display:block;margin-bottom:6px;font-weight:600;color:#FFD700;font-size:13px"><i class="fas fa-map-marker-alt me-2"></i>Kota</label><input id="swal-input-city" class="swal2-input" style="width:100%;margin:0;box-sizing:border-box" value="${userCity}" placeholder="Jakarta, Indonesia"></div>
-          <div><label style="display:block;margin-bottom:6px;font-weight:600;color:#FFD700;font-size:13px"><i class="fas fa-quote-left me-2"></i>Bio Singkat</label><textarea id="swal-input-bio" class="swal2-textarea" style="width:100%;margin:0;box-sizing:border-box;height:75px;resize:none" placeholder="Minat acara Anda...">${userBio}</textarea></div>
-        </div>`,
-      focusConfirm: false, showCancelButton: true,
-      confirmButtonText: '<i class="fas fa-save me-1"></i> Simpan',
-      cancelButtonText: '<i class="fas fa-times me-1"></i> Batal',
-      preConfirm: () => {
-        const name = (document.getElementById('swal-input-name') as HTMLInputElement).value;
-        const phone = (document.getElementById('swal-input-phone') as HTMLInputElement).value;
-        const city = (document.getElementById('swal-input-city') as HTMLInputElement).value;
-        const bio = (document.getElementById('swal-input-bio') as HTMLTextAreaElement).value;
-        if (!name.trim()) { Swal.showValidationMessage('Nama tidak boleh kosong'); return false; }
-        return { name: name.trim(), phone: phone.trim(), city: city.trim(), bio: bio.trim() };
-      },
-    });
-    if (v) {
-      try {
-        await updateProfile({ name: v.name, phone: v.phone });
-        setUserCity(v.city); setUserBio(v.bio);
-        localStorage.setItem('user_city', v.city); localStorage.setItem('user_bio', v.bio);
-        Swal.fire({ icon: 'success', title: 'Profil Diperbarui', timer: 1800, showConfirmButton: false });
-      } catch (err: any) {
-        Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Terjadi kesalahan.' });
-      }
-    }
-  };
-
   const stats = useMemo(() => {
     const paid = tickets.filter((t) => t.status === 'PAID');
     const pending = tickets.filter((t) => t.status === 'PENDING');
@@ -109,116 +43,59 @@ export const UserDashboardPage: React.FC = () => {
 
   return (
     <div className="position-relative min-vh-100" style={{ backgroundColor: '#0a0514', color: '#fff' }}>
-      <input type="file" ref={fileInputRef} onChange={handleAvatarChange} accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} />
 
-      {/* ═══ SECTION 1: EDITORIAL HERO PROFILE BANNER ═══ */}
-      <section className="position-relative overflow-hidden" style={{ minHeight: '420px' }}>
+      {/* ═══ SECTION 1: INFORMATIONAL HERO BANNER ═══ */}
+      <section className="position-relative overflow-hidden" style={{ minHeight: '400px' }}>
         {/* Cinematic BG */}
         <div className="position-absolute top-0 start-0 w-100 h-100" style={{
           backgroundImage: "url('/images/user_dashboard_bg.jpg')",
           backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(0.4) saturate(1.2)',
+          filter: 'brightness(0.45) saturate(1.2)',
         }} />
         <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: 'linear-gradient(180deg, rgba(10,5,20,0.3) 0%, rgba(10,5,20,0.95) 100%)',
+          background: 'linear-gradient(180deg, rgba(10,5,20,0.2) 0%, rgba(10,5,20,0.92) 100%)',
         }} />
 
-        <div className="container position-relative" style={{ zIndex: 1, paddingTop: '80px', paddingBottom: '60px' }}>
-          <div className="row align-items-end g-4">
-            {/* Left: Avatar + Identity */}
-            <div className="col-lg-7">
-              <div className="d-flex align-items-end gap-4">
-                {/* Avatar */}
-                <div
-                  className="position-relative flex-shrink-0"
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ cursor: 'pointer' }}
-                  title="Ganti foto profil"
-                >
-                  {user?.profilePicture ? (
-                    <img
-                      src={user.profilePicture} alt={user.name}
-                      style={{
-                        width: '130px', height: '130px', objectFit: 'cover',
-                        borderRadius: '24px', border: '3px solid rgba(255,215,0,0.4)',
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '130px', height: '130px', borderRadius: '24px',
-                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b69 100%)',
-                      border: '3px solid rgba(255,215,0,0.4)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '3.2rem', fontWeight: 700, color: '#FFD700',
-                      fontFamily: "'Playfair Display', serif",
-                      boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-                    }}>
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                  )}
-                  <div style={{
-                    position: 'absolute', bottom: '-6px', right: '-6px',
-                    width: '36px', height: '36px', borderRadius: '12px',
-                    background: '#FFD700', color: '#0a0514',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '14px', boxShadow: '0 4px 12px rgba(255,215,0,0.4)',
-                  }}>
-                    <i className={`fas ${isUploadingAvatar ? 'fa-spinner fa-spin' : 'fa-camera'}`} />
-                  </div>
-                </div>
+        <div className="container position-relative d-flex flex-column justify-content-center" style={{ zIndex: 1, paddingTop: '110px', paddingBottom: '60px' }}>
+          {/* Greeting Badge */}
+          <div className="mb-3">
+            <span style={{
+              fontSize: '11px', letterSpacing: '2.5px', textTransform: 'uppercase',
+              color: '#FFD700', fontWeight: 600,
+            }}>
+              <i className="fas fa-hand-sparkles me-2" />
+              Selamat datang kembali, {firstName}
+            </span>
+          </div>
 
-                {/* Identity Text */}
-                <div style={{ paddingBottom: '4px' }}>
-                  <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                    <span style={{
-                      fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase',
-                      color: '#FFD700', fontWeight: 600,
-                    }}>
-                      <i className="fas fa-gem me-1" /> VERIFIED ATTENDEE
-                    </span>
-                    <span style={{
-                      fontSize: '10px', letterSpacing: '1px',
-                      color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase',
-                    }}>
-                      <i className="fas fa-map-pin me-1" /> {userCity}
-                    </span>
-                  </div>
+          {/* Main Headline */}
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 'clamp(2.4rem, 5vw, 4rem)',
+            fontWeight: 700, lineHeight: 1.08,
+            margin: 0, letterSpacing: '-1.5px',
+            maxWidth: '700px',
+          }}>
+            Temukan Acara<br />
+            <span style={{ color: '#FFD700', fontStyle: 'italic' }}>Terbaik</span> di Sekitar Anda
+          </h1>
 
-                  <h1 style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
-                    fontWeight: 700, lineHeight: 1.05,
-                    margin: 0, letterSpacing: '-1px',
-                  }}>
-                    {user?.name}
-                  </h1>
+          {/* Subtitle */}
+          <p style={{
+            color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
+            margin: '20px 0 28px', maxWidth: '540px', lineHeight: 1.7,
+          }}>
+            Jelajahi konser eksklusif, festival seni internasional, dan konferensi teknologi terdepan. Semua tiket dilindungi proteksi anti-calo dan pembayaran instan.
+          </p>
 
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem', margin: '10px 0 0', maxWidth: '420px', lineHeight: 1.6 }}>
-                    <i className="fas fa-quote-left me-1" style={{ color: 'rgba(255,215,0,0.4)', fontSize: '0.7rem' }} />
-                    {userBio}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Quick Actions */}
-            <div className="col-lg-5">
-              <div className="d-flex flex-wrap gap-2 justify-content-lg-end">
-                <button onClick={handleEditProfile} className="btn-kikk-outline px-4 py-2" style={{ fontSize: '13px', borderRadius: '14px' }}>
-                  <i className="fas fa-pen-to-square me-2" style={{ color: '#FFD700' }} /> Edit Profil
-                </button>
-                <Link to="/my-tickets" className="btn-kikk px-4 py-2" style={{ fontSize: '13px', borderRadius: '14px' }}>
-                  <i className="fas fa-ticket-alt me-2" /> Tiket Saya
-                </Link>
-              </div>
-
-              {/* Contact Info - subtle */}
-              <div className="d-flex flex-wrap gap-3 mt-3 justify-content-lg-end" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
-                <span><i className="far fa-envelope me-1" style={{ color: 'rgba(255,215,0,0.5)' }} />{user?.email}</span>
-                <span><i className="fab fa-whatsapp me-1" style={{ color: 'rgba(34,197,94,0.6)' }} />{user?.phone || 'Belum diatur'}</span>
-              </div>
-            </div>
+          {/* CTA Buttons */}
+          <div className="d-flex flex-wrap gap-3">
+            <Link to="/events" className="btn-kikk py-3 px-5" style={{ borderRadius: '16px', fontSize: '14px' }}>
+              <i className="fas fa-compass me-2" /> Jelajahi Katalog Acara
+            </Link>
+            <Link to="/my-tickets" className="btn-kikk-outline py-3 px-5" style={{ borderRadius: '16px', fontSize: '14px' }}>
+              <i className="fas fa-ticket-alt me-2" style={{ color: '#FFD700' }} /> Tiket Saya ({stats.total})
+            </Link>
           </div>
         </div>
       </section>
@@ -268,7 +145,7 @@ export const UserDashboardPage: React.FC = () => {
       {/* ═══ SECTION 3: ASYMMETRIC BENTO — NEXT EVENT + DISCOVER ═══ */}
       <section className="container" style={{ padding: '60px 0 80px' }}>
         <div className="row g-4">
-          {/* Main: Next Event Spotlight (Monarque "Orchestrer l'inoubliable" style) */}
+          {/* Main: Next Event Spotlight */}
           <div className="col-lg-7">
             <div style={{
               position: 'relative', borderRadius: '28px', overflow: 'hidden',
@@ -276,7 +153,6 @@ export const UserDashboardPage: React.FC = () => {
               justifyContent: 'flex-end', padding: 'clamp(24px, 4vw, 48px)',
               border: '1px solid rgba(255,255,255,0.06)',
             }}>
-              {/* BG: Event image or default */}
               <div className="position-absolute top-0 start-0 w-100 h-100" style={{
                 backgroundImage: stats.next?.eventImageUrl
                   ? `url(${stats.next.eventImageUrl})`
@@ -316,7 +192,6 @@ export const UserDashboardPage: React.FC = () => {
                       {stats.next.eventName}
                     </h2>
 
-                    {/* Event meta — horizontal editorial style */}
                     <div className="d-flex flex-wrap gap-4 mb-4" style={{ fontSize: '13px' }}>
                       <div>
                         <div style={{ fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '4px' }}>Tanggal</div>
@@ -334,7 +209,6 @@ export const UserDashboardPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Booking ribbon */}
                     <div className="d-flex flex-wrap align-items-center gap-3 mb-4" style={{
                       padding: '14px 20px', borderRadius: '16px',
                       background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
@@ -390,7 +264,6 @@ export const UserDashboardPage: React.FC = () => {
               background: 'linear-gradient(135deg, #1a0a2e 0%, #0d0520 100%)',
               border: '1px solid rgba(255,215,0,0.08)',
             }}>
-              {/* Decorative accent line */}
               <div style={{
                 position: 'absolute', top: 0, left: '30px', right: '30px', height: '2px',
                 background: 'linear-gradient(90deg, transparent 0%, #FFD700 50%, transparent 100%)',
@@ -454,7 +327,7 @@ export const UserDashboardPage: React.FC = () => {
       </section>
 
       {/* Floating Island Navigation Dock */}
-      <UserFloatingDock onOpenSettings={handleEditProfile} />
+      <UserFloatingDock />
     </div>
   );
 };
