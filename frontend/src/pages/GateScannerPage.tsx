@@ -70,7 +70,7 @@ export const GateScannerPage: React.FC = () => {
           qrbox: { width: 240, height: 240 },
         },
         async (decodedText) => {
-          console.log('✅ QR Code terdeteksi:', decodedText);
+          console.log('[QR Scanner] QR Code terdeteksi:', decodedText);
           await stopCamera();
           handleVerify(decodedText);
         },

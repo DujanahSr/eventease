@@ -1,10 +1,12 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { EventEaseLogo } from './EventEaseLogo';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -19,11 +21,13 @@ export const Navbar: React.FC = () => {
     return '/';
   };
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <nav
       className="navbar navbar-expand-lg navbar-dark fixed-top"
       style={{
-        background: 'rgba(11, 6, 22, 0.82)',
+        background: 'rgba(11, 6, 22, 0.85)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255, 215, 0, 0.12)',
@@ -33,13 +37,11 @@ export const Navbar: React.FC = () => {
       }}
     >
       <div className="container">
-        <Link
-          className="navbar-brand kikk-title text-lowercase d-flex align-items-center gap-1"
-          to="/"
-          style={{ fontSize: '1.9rem', letterSpacing: '0.5px' }}
-        >
-          eventease<span style={{ color: 'var(--kikk-yellow)', fontSize: '2.4rem', lineHeight: '0' }}>.</span>
+        {/* Official Brand Logo */}
+        <Link to="/" className="navbar-brand py-0">
+          <EventEaseLogo size="md" />
         </Link>
+
         <button
           className="navbar-toggler border-0 shadow-none"
           type="button"
@@ -48,31 +50,52 @@ export const Navbar: React.FC = () => {
           aria-controls="navbarNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
-          style={{ color: 'var(--kikk-yellow)' }}
+          style={{ color: '#FFD700' }}
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto align-items-center gap-2">
+          <ul className="navbar-nav ms-auto align-items-center gap-1">
             <li className="nav-item">
-              <Link className="nav-link px-3" to="/" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem' }}>
+              <Link
+                className={`nav-link px-3 ${isActive('/') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
+                to="/"
+                style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
+              >
                 Beranda
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link px-3" to="/events" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem' }}>
+              <Link
+                className={`nav-link px-3 ${isActive('/events') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
+                to="/events"
+                style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
+              >
                 Katalog Acara
               </Link>
             </li>
+
+            {/* Khusus User: Link Cepat ke Tiket Saya */}
+            {isAuthenticated && user?.role === 'USER' && (
+              <li className="nav-item">
+                <Link
+                  className={`nav-link px-3 ${isActive('/my-tickets') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
+                  to="/my-tickets"
+                  style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
+                >
+                  <i className="fas fa-ticket-alt me-1 text-warning"></i> Tiket Saya
+                </Link>
+              </li>
+            )}
 
             {!isAuthenticated ? (
               <>
                 <li className="nav-item ms-lg-2">
                   <Link
-                    className="nav-link px-3"
+                    className="nav-link px-3 text-warning fw-medium"
                     to="/login"
-                    style={{ color: 'var(--kikk-yellow)', fontWeight: 500, fontSize: '0.95rem' }}
+                    style={{ fontSize: '0.92rem' }}
                   >
                     Masuk
                   </Link>
@@ -97,7 +120,7 @@ export const Navbar: React.FC = () => {
                       background: 'rgba(255, 215, 0, 0.08)',
                       border: '1px solid rgba(255, 215, 0, 0.25)',
                       textDecoration: 'none',
-                      color: '#fff',
+                      color: '#ffffff',
                       transition: 'all 0.3s ease',
                     }}
                   >
@@ -110,7 +133,7 @@ export const Navbar: React.FC = () => {
                           width: '32px',
                           height: '32px',
                           objectFit: 'cover',
-                          border: '2px solid var(--kikk-yellow)',
+                          border: '2px solid #FFD700',
                         }}
                       />
                     ) : (
@@ -148,7 +171,7 @@ export const Navbar: React.FC = () => {
                       borderRadius: '10px',
                       fontSize: '12px',
                     }}
-                    title="Keluar dari akun"
+                    title="Keluar dari sesi akun"
                   >
                     <i className="fas fa-sign-out-alt me-1"></i> Keluar
                   </button>

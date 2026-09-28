@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { EventEaseLogo } from '../components/EventEaseLogo';
 import Swal from 'sweetalert2';
 
 export const RegisterPage: React.FC = () => {
@@ -211,30 +212,10 @@ export const RegisterPage: React.FC = () => {
         >
           {/* Header Brand */}
           <div className="auth-header text-center mb-4">
-            <Link
-              to="/"
-              className="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none"
-            >
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '42px', height: '42px', background: 'rgba(255,215,0,0.15)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255,215,0,0.3)' }}
-              >
-                <i className="fas fa-gem fs-5"></i>
-              </div>
-              <span
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontWeight: 900,
-                  fontStyle: 'italic',
-                  fontSize: '2.4rem',
-                  color: '#fff',
-                  letterSpacing: '-1px',
-                }}
-              >
-                eventease.
-              </span>
+            <Link to="/" className="d-inline-flex justify-content-center mb-2 text-decoration-none">
+              <EventEaseLogo size="lg" />
             </Link>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '8px 0 0 0' }}>
               Daftarkan akun baru untuk pengalaman tiket kelas dunia
             </p>
           </div>

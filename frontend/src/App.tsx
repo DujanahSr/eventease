@@ -11,6 +11,7 @@ import { EventDetailPage } from './pages/EventDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { GateScannerPage } from './pages/GateScannerPage';
@@ -37,6 +38,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['USER', 'ADMIN']}>
                 <UserDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-tickets"
+            element={
+              <ProtectedRoute allowedRoles={['USER', 'ADMIN']}>
+                <MyTicketsPage />
               </ProtectedRoute>
             }
           />

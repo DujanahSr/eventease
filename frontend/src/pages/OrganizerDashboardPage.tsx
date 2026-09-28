@@ -6,6 +6,7 @@ import { bookingService, triggerFileDownload } from '../services/bookingService'
 import { websocketService, CheckInNotification } from '../services/websocketService';
 import { mediaService } from '../services/mediaService';
 import { EventSummary, Category } from '../types';
+import { EventEaseLogo } from '../components/EventEaseLogo';
 import Swal from 'sweetalert2';
 
 export const OrganizerDashboardPage: React.FC = () => {
@@ -280,12 +281,8 @@ export const OrganizerDashboardPage: React.FC = () => {
         <div>
           {/* Brand Logo & Portal Badge */}
           <div className="mb-4 pb-3 border-bottom" style={{ borderColor: 'rgba(255, 215, 0, 0.15)' }}>
-            <Link
-              to="/"
-              className="navbar-brand kikk-title text-lowercase d-flex align-items-center gap-1 mb-2"
-              style={{ fontSize: '1.8rem' }}
-            >
-              eventease<span style={{ color: 'var(--kikk-yellow)', fontSize: '2.2rem', lineHeight: 0 }}>.</span>
+            <Link to="/" className="d-block mb-2 text-decoration-none">
+              <EventEaseLogo size="md" />
             </Link>
             <span className="gold-glow-badge" style={{ fontSize: '10px', letterSpacing: '1px' }}>
               <i className="fas fa-crown text-warning me-1"></i> ORGANIZER CONSOLE
