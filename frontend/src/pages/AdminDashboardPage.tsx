@@ -250,6 +250,31 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const handleDownloadTicketPdf = async (booking: BookingResponseData) => {
+    try {
+      Swal.fire({
+        title: 'Mengunduh Dokumen...',
+        text: 'Menyiapkan berkas e-ticket PDF resmi...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+      await bookingService.downloadTicketPdf(booking.id, booking.eventName);
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Diunduh!',
+        text: 'Dokumen tiket PDF telah disimpan.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengunduh',
+        text: err.response?.data?.message || 'Terjadi kesalahan saat mengunduh e-ticket PDF.',
+      });
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Background Subtle Geometric Pattern */}
@@ -620,17 +645,16 @@ export const AdminDashboardPage: React.FC = () => {
                                 <i className="fas fa-check-double me-1"></i> Konfirmasi Lunas
                               </button>
                             )}
-                            {b.status === 'PAID' && (
-                              <a
-                                href={`/api/bookings/${b.id}/ticket-pdf`}
-                                target="_blank"
-                                rel="noreferrer"
+                            {(b.status === 'PAID' || b.status === 'CHECKED_IN') && (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadTicketPdf(b)}
                                 className="btn btn-sm btn-outline-light py-1 px-3"
                                 style={{ fontSize: '11px', borderRadius: '6px' }}
                                 title="Unduh E-Ticket PDF"
                               >
                                 <i className="fas fa-file-pdf me-1 text-danger"></i> Unduh PDF
-                              </a>
+                              </button>
                             )}
                           </div>
                         </td>

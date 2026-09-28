@@ -35,15 +35,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+        String extractedToken = null;
 
-        if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            extractedToken = authHeader.substring(7);
+        } else if (StringUtils.hasText(request.getParameter("token"))) {
+            extractedToken = request.getParameter("token");
+        }
+
+        if (!StringUtils.hasText(extractedToken)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
+        final String jwt = extractedToken;
+        final String userEmail;
 
         // Cek apakah token sudah di-blacklist (misal karena user sudah logout)
         if (tokenBlacklistService.isBlacklisted(jwt)) {

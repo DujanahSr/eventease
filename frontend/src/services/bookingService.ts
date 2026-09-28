@@ -73,6 +73,15 @@ export const bookingService = {
     const res = await api.post<ApiResponse<BookingResponseData>>(`/bookings/${id}/manual-confirm`);
     return res.data.data;
   },
+
+  async downloadTicketPdf(id: string, eventName?: string): Promise<void> {
+    const res = await api.get(`/bookings/${id}/ticket-pdf`, {
+      responseType: 'blob',
+    });
+    const safeTitle = (eventName || 'Acara').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `Eventease_ETicket_${safeTitle}_${id.substring(0, 8).toUpperCase()}.pdf`;
+    triggerFileDownload(res.data, filename);
+  },
 };
 
 export const triggerFileDownload = (blob: Blob, defaultFilename: string) => {

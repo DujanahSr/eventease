@@ -11,6 +11,7 @@ export const MyTicketsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
   const [sortBy, setSortBy] = useState<'NEWEST' | 'EVENT_DATE' | 'PRICE_HIGH'>('NEWEST');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const fetchTickets = async () => {
     setIsLoading(true);
@@ -130,6 +131,35 @@ export const MyTicketsPage: React.FC = () => {
     }
   };
 
+  const handleDownloadPdf = async (ticket: BookingResponseData) => {
+    setDownloadingId(ticket.id);
+    try {
+      Swal.fire({
+        title: 'Mengunduh E-Ticket...',
+        text: 'Menyiapkan berkas PDF resmi tiket...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+      await bookingService.downloadTicketPdf(ticket.id, ticket.eventName);
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Diunduh!',
+        text: 'E-Ticket PDF telah tersimpan di komputer Anda.',
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengunduh',
+        text: err.response?.data?.message || 'Terjadi kesalahan saat mengunduh e-ticket PDF.',
+        confirmButtonColor: '#FFD700',
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const handleCancelBooking = async (ticket: BookingResponseData) => {
     const result = await Swal.fire({
       title: 'Batalkan Pesanan Ini?',
@@ -173,7 +203,9 @@ export const MyTicketsPage: React.FC = () => {
     let result = [...tickets];
 
     // Filter Status
-    if (statusFilter !== 'ALL') {
+    if (statusFilter === 'PAID') {
+      result = result.filter((t) => t.status === 'PAID' || t.status === 'CHECKED_IN');
+    } else if (statusFilter !== 'ALL') {
       result = result.filter((t) => t.status === statusFilter);
     }
 
@@ -189,7 +221,7 @@ export const MyTicketsPage: React.FC = () => {
     return result;
   }, [tickets, statusFilter, sortBy]);
 
-  const paidCount = tickets.filter((t) => t.status === 'PAID').length;
+  const paidCount = tickets.filter((t) => t.status === 'PAID' || t.status === 'CHECKED_IN').length;
   const pendingCount = tickets.filter((t) => t.status === 'PENDING').length;
 
   return (
@@ -394,6 +426,13 @@ export const MyTicketsPage: React.FC = () => {
                           >
                             <i className="fas fa-circle-check me-1"></i> LUNAS (AKTIF)
                           </span>
+                        ) : t.status === 'CHECKED_IN' ? (
+                          <span
+                            className="badge bg-info text-white"
+                            style={{ padding: '7px 18px', borderRadius: '50px', fontSize: '11px', letterSpacing: '1px', fontWeight: 700 }}
+                          >
+                            <i className="fas fa-id-card-clip me-1"></i> TELAH CHECK-IN
+                          </span>
                         ) : t.status === 'PENDING' ? (
                           <span
                             className="badge bg-warning text-dark"
@@ -437,16 +476,31 @@ export const MyTicketsPage: React.FC = () => {
 
                     {/* Action Button */}
                     <div className="w-100">
-                      {t.status === 'PAID' ? (
-                        <a
-                          href={`/api/bookings/${t.id}/ticket-pdf`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-kikk w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
-                          style={{ fontSize: '13px', borderRadius: '10px' }}
-                        >
-                          <i className="fas fa-file-pdf"></i> Unduh E-Ticket (PDF)
-                        </a>
+                      {t.status === 'PAID' || t.status === 'CHECKED_IN' ? (
+                        <div className="d-flex flex-column gap-2 w-100">
+                          <Link
+                            to={`/my-tickets/${t.id}`}
+                            className="btn-kikk w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
+                            style={{ fontSize: '13px', borderRadius: '10px' }}
+                          >
+                            <i className="fas fa-qrcode"></i> Lihat Detail &amp; QR Masuk
+                          </Link>
+                          <button
+                            type="button"
+                            disabled={downloadingId === t.id}
+                            onClick={() => handleDownloadPdf(t)}
+                            className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
+                            style={{
+                              fontSize: '12px',
+                              borderRadius: '10px',
+                              borderColor: 'rgba(255, 215, 0, 0.35)',
+                              color: '#FFD700',
+                            }}
+                          >
+                            <i className={`fas ${downloadingId === t.id ? 'fa-spinner fa-spin' : 'fa-file-pdf'}`}></i>
+                            {downloadingId === t.id ? 'Mengunduh...' : 'Unduh E-Ticket (PDF)'}
+                          </button>
+                        </div>
                       ) : t.status === 'PENDING' ? (
                         <div className="d-flex flex-column gap-2 w-100">
                           <button
@@ -457,10 +511,45 @@ export const MyTicketsPage: React.FC = () => {
                           >
                             <i className="fas fa-credit-card"></i> Selesaikan Pesanan
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCancelBooking(t)}
-                            className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-2 py-1"
+                          <div className="d-flex gap-2">
+                            <Link
+                              to={`/my-tickets/${t.id}`}
+                              className="btn-kikk-outline flex-grow-1 d-inline-flex align-items-center justify-content-center gap-1 py-1"
+                              style={{
+                                fontSize: '11px',
+                                borderRadius: '8px',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                color: 'rgba(255, 255, 255, 0.8)',
+                              }}
+                            >
+                              <i className="fas fa-eye"></i> Detail
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelBooking(t)}
+                              className="btn-kikk-outline flex-grow-1 d-inline-flex align-items-center justify-content-center gap-1 py-1"
+                              style={{
+                                fontSize: '11px',
+                                borderRadius: '8px',
+                                borderColor: 'rgba(255, 255, 255, 0.15)',
+                                color: 'rgba(255, 255, 255, 0.5)',
+                              }}
+                            >
+                              <i className="fas fa-xmark"></i> Batalkan
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="d-flex flex-column gap-2 w-100">
+                          <div
+                            className="text-secondary small py-2 px-3 rounded text-center"
+                            style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                          >
+                            <i className="fas fa-ban me-1 text-danger"></i> Pesanan Dibatalkan
+                          </div>
+                          <Link
+                            to={`/my-tickets/${t.id}`}
+                            className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1"
                             style={{
                               fontSize: '11px',
                               borderRadius: '8px',
@@ -468,15 +557,8 @@ export const MyTicketsPage: React.FC = () => {
                               color: 'rgba(255, 255, 255, 0.5)',
                             }}
                           >
-                            <i className="fas fa-xmark"></i> Batalkan Pesanan
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          className="text-secondary small py-2 px-3 rounded"
-                          style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
-                        >
-                          <i className="fas fa-ban me-1 text-danger"></i> Pesanan Telah Dibatalkan
+                            <i className="fas fa-eye"></i> Lihat Detail Pesanan
+                          </Link>
                         </div>
                       )}
                     </div>

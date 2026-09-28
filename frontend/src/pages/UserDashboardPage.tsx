@@ -263,12 +263,15 @@ export const UserDashboardPage: React.FC = () => {
                     </div>
 
                     <div className="d-flex flex-wrap gap-2">
-                      <a href={`/api/bookings/${stats.next.id}/ticket-pdf`} target="_blank" rel="noreferrer"
-                        className="btn-kikk py-2 px-4" style={{ borderRadius: '14px', fontSize: '13px' }}>
-                        <i className="fas fa-file-pdf me-1" /> Unduh E-Ticket
-                      </a>
+                      <Link
+                        to={`/my-tickets/${stats.next.id}`}
+                        className="btn-kikk py-2 px-4"
+                        style={{ borderRadius: '14px', fontSize: '13px' }}
+                      >
+                        <i className="fas fa-qrcode me-2" /> Buka E-Ticket &amp; QR
+                      </Link>
                       <Link to="/my-tickets" className="btn-kikk-outline py-2 px-4" style={{ borderRadius: '14px', fontSize: '13px' }}>
-                        Kelola Tiket
+                        Kelola Semua Tiket
                       </Link>
                     </div>
                   </>
