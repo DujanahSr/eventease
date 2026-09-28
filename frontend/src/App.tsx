@@ -22,6 +22,7 @@ import { ProfilePage } from './pages/ProfilePage';
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isConsolePage = ['/dashboard', '/home-admin', '/scan', '/wallet'].some((path) => location.pathname.startsWith(path));
 
   return (
     <div className="d-flex flex-column min-vh-100">
@@ -108,7 +109,7 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<HomePage />} />
         </Routes>
       </main>
-      {!isAuthPage && <Footer />}
+      {!isAuthPage && !isConsolePage && <Footer />}
     </div>
   );
 };

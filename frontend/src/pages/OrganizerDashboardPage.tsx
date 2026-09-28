@@ -44,7 +44,7 @@ export const OrganizerDashboardPage: React.FC = () => {
     setIsLoading(true);
     try {
       const [resEvents, resCats] = await Promise.all([
-        eventService.getEvents('', '', 0, 10),
+        eventService.getMyEvents(0, 50),
         eventService.getCategories(),
       ]);
       setEvents(resEvents.content || []);
@@ -579,54 +579,75 @@ export const OrganizerDashboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {events.map((e) => (
-                    <tr key={e.id} style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
-                      <td className="fw-bold text-white py-3">
-                        <div className="d-flex align-items-center gap-3">
-                          <img
-                            src={e.imageUrl || '/images/kikk_hero_stage.jpg'}
-                            alt={e.name}
-                            className="rounded"
-                            style={{ width: '42px', height: '42px', objectFit: 'cover' }}
-                          />
-                          <div>
-                            <div className="text-white">{e.name}</div>
-                            <div className="text-secondary small font-monospace">ID: {e.id.substring(0, 8)}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge" style={{ background: 'rgba(255, 215, 0, 0.12)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255, 215, 0, 0.3)' }}>
-                          {e.categoryName || 'General'}
-                        </span>
-                      </td>
-                      <td className="text-secondary small">
-                        <i className="far fa-calendar-alt text-warning me-1"></i> {e.date}
-                      </td>
-                      <td className="text-secondary small">
-                        <i className="fas fa-map-marker-alt text-warning me-1"></i> {e.location}
-                      </td>
-                      <td className="text-end">
-                        <div className="d-flex justify-content-end gap-2">
+                  {events.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-5">
+                        <div className="py-4">
+                          <i className="fas fa-calendar-plus text-warning fs-1 mb-3 opacity-50"></i>
+                          <h6 className="text-white fw-bold">Belum Ada Acara yang Diselenggarakan</h6>
+                          <p className="text-secondary small mb-3">
+                            Anda belum memiliki acara. Mulai buat acara resmi pertama Anda sekarang!
+                          </p>
                           <button
-                            onClick={() => handleExportExcel(e.id, e.name)}
-                            className="btn-kikk-outline btn-sm py-1 px-3"
-                            style={{ fontSize: '11px', borderColor: '#22c55e', color: '#22c55e', borderRadius: '8px' }}
-                            title="Unduh laporan penjualan acara ini (.xlsx)"
+                            onClick={() => setShowCreateModal(true)}
+                            className="btn-kikk btn-sm py-2 px-4"
+                            style={{ borderRadius: '10px' }}
                           >
-                            <i className="fas fa-file-excel me-1"></i> Excel
+                            <i className="fas fa-plus me-1"></i> Buat Acara Pertama
                           </button>
-                          <Link
-                            to={`/events/${e.id}`}
-                            className="btn-kikk btn-sm py-1 px-3"
-                            style={{ fontSize: '11px', borderRadius: '8px' }}
-                          >
-                            <i className="fas fa-eye me-1"></i> Detail
-                          </Link>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    events.map((e) => (
+                      <tr key={e.id} style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
+                        <td className="fw-bold text-white py-3">
+                          <div className="d-flex align-items-center gap-3">
+                            <img
+                              src={e.imageUrl || '/images/kikk_hero_stage.jpg'}
+                              alt={e.name}
+                              className="rounded"
+                              style={{ width: '42px', height: '42px', objectFit: 'cover' }}
+                            />
+                            <div>
+                              <div className="text-white">{e.name}</div>
+                              <div className="text-secondary small font-monospace">ID: {e.id.substring(0, 8)}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge" style={{ background: 'rgba(255, 215, 0, 0.12)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255, 215, 0, 0.3)' }}>
+                            {e.categoryName || 'General'}
+                          </span>
+                        </td>
+                        <td className="text-secondary small">
+                          <i className="far fa-calendar-alt text-warning me-1"></i> {e.date}
+                        </td>
+                        <td className="text-secondary small">
+                          <i className="fas fa-map-marker-alt text-warning me-1"></i> {e.location}
+                        </td>
+                        <td className="text-end">
+                          <div className="d-flex justify-content-end gap-2">
+                            <button
+                              onClick={() => handleExportExcel(e.id, e.name)}
+                              className="btn-kikk-outline btn-sm py-1 px-3"
+                              style={{ fontSize: '11px', borderColor: '#22c55e', color: '#22c55e', borderRadius: '8px' }}
+                              title="Unduh laporan penjualan acara ini (.xlsx)"
+                            >
+                              <i className="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <Link
+                              to={`/events/${e.id}`}
+                              className="btn-kikk btn-sm py-1 px-3"
+                              style={{ fontSize: '11px', borderRadius: '8px' }}
+                            >
+                              <i className="fas fa-eye me-1"></i> Detail
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

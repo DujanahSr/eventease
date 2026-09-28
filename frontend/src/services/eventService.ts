@@ -23,6 +23,11 @@ export const eventService = {
     return res.data.data;
   },
 
+  async getMyEvents(page = 0, size = 10): Promise<PagedResponse<EventSummary>> {
+    const res = await api.get<ApiResponse<PagedResponse<EventSummary>>>(`/events/my-events?page=${page}&size=${size}`);
+    return res.data.data;
+  },
+
   async createEvent(eventData: any): Promise<EventDetail> {
     const res = await api.post<ApiResponse<EventDetail>>('/events', eventData);
     return res.data.data;
