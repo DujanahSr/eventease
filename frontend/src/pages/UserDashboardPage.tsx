@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingService, BookingResponseData } from '../services/bookingService';
 import { UserFloatingDock } from '../components/UserFloatingDock';
+import userDashboardBg from '../assets/images/user_dashboard_bg.jpg';
 
 export const UserDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ export const UserDashboardPage: React.FC = () => {
         <div
           className="position-absolute top-0 start-0 w-100 h-100"
           style={{
-            backgroundImage: "url('/images/user_dashboard_bg.jpg')",
+            backgroundImage: `url(${userDashboardBg})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center 35%',
             opacity: 1,
