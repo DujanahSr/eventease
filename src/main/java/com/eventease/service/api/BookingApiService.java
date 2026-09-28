@@ -21,4 +21,5 @@ public interface BookingApiService {
     BookingResponseDto verifyPayment(String bookingId, Map<String, Object> payload, UserPrincipal userPrincipal);
     List<BookingResponseDto> getAllBookings(UserPrincipal userPrincipal);
     BookingResponseDto manualConfirmPayment(String bookingId, UserPrincipal userPrincipal);
+    void resendTicketEmail(String bookingId, UserPrincipal userPrincipal);
 }

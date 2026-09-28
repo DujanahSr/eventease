@@ -35,21 +35,25 @@ public class EmailService {
             String eventName = booking.getTicketCategory() != null && booking.getTicketCategory().getEvent() != null
                     ? booking.getTicketCategory().getEvent().getName() : "Eventease Event";
 
+            helper.setFrom("dujanahsr07@gmail.com", "Eventease Ticketing Platform");
             helper.setTo(booking.getUser().getEmail());
-            helper.setSubject("E-Ticket Eventease: " + eventName);
+            helper.setSubject("E-Ticket Resmi Eventease: " + eventName);
 
             String htmlBody = buildTicketEmailHtml(booking);
             helper.setText(htmlBody, true);
 
             // Attach PDF ticket
             if (pdfBytes != null && pdfBytes.length > 0) {
-                helper.addAttachment("E-Ticket_" + booking.getId() + ".pdf", new ByteArrayResource(pdfBytes));
+                String safeEventName = eventName.replaceAll("[^a-zA-Z0-9.-]", "_");
+                helper.addAttachment("Eventease_ETicket_" + safeEventName + ".pdf", new ByteArrayResource(pdfBytes));
             }
 
+            log.info("Memulai pengiriman email e-ticket via SMTP ke {}", booking.getUser().getEmail());
             mailSender.send(message);
-            log.info("Email E-Ticket berhasil dikirim ke {}", booking.getUser().getEmail());
-        } catch (MessagingException e) {
-            log.error("Gagal mengirim email e-ticket: {}", e.getMessage(), e);
+            log.info("Email E-Ticket BERHASIL terkirim via SMTP ke {}", booking.getUser().getEmail());
+        } catch (Exception e) {
+            log.error("Gagal mengirim email e-ticket ke {}: {}", booking.getUser().getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Gagal mengirim email e-ticket: " + e.getMessage(), e);
         }
     }
 

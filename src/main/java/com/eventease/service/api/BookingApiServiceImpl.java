@@ -549,20 +549,47 @@ public class BookingApiServiceImpl implements BookingApiService {
                 .totalAmount(amount)
                 .build();
 
-        boolean queued = false;
+        // 1. Selalu kirimkan konfirmasi dan e-tiket PDF ke email pengguna secara langsung
         try {
-            queued = ticketFulfillmentProducer.publishTicketFulfillment(message);
-        } catch (Exception ex) {
-            log.warn("RabbitMQ tidak aktif/tersedia: {}", ex.getMessage());
+            byte[] pdfBytes = pdfService.generateTicketPdf(booking);
+            emailService.sendETicketEmail(booking, pdfBytes);
+        } catch (Exception e) {
+            log.error("Gagal mengirim e-tiket PDF via email: {}", e.getMessage(), e);
         }
 
-        if (!queued) {
-            try {
-                byte[] pdfBytes = pdfService.generateTicketPdf(booking);
-                emailService.sendETicketEmail(booking, pdfBytes);
-            } catch (Exception e) {
-                log.error("Fallback: Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
-            }
+        // 2. Terbitkan ke antrean RabbitMQ untuk audit/pemrosesan downstream
+        try {
+            ticketFulfillmentProducer.publishTicketFulfillment(message);
+        } catch (Exception ex) {
+            log.debug("RabbitMQ dispatch optional: {}", ex.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void resendTicketEmail(String bookingId, UserPrincipal userPrincipal) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan tidak ditemukan dengan ID: " + bookingId));
+
+        boolean isAdmin = userPrincipal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = booking.getUser().getId().equals(userPrincipal.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new UnauthorizedException("Anda tidak berhak mengakses pesanan ini");
+        }
+
+        if (booking.getStatus() != Booking.Status.PAID && booking.getStatus() != Booking.Status.CHECKED_IN) {
+            throw new IllegalStateException("Hanya tiket yang telah lunas yang dapat dikirimkan ke email.");
+        }
+
+        try {
+            byte[] pdfBytes = pdfService.generateTicketPdf(booking);
+            emailService.sendETicketEmail(booking, pdfBytes);
+            log.info("Email e-ticket berhasil dikirim ulang ke: {}", booking.getUser().getEmail());
+        } catch (Exception e) {
+            log.error("Gagal mengirim ulang email tiket {}: {}", bookingId, e.getMessage(), e);
+            throw new RuntimeException("Gagal mengirimkan email e-ticket: " + e.getMessage(), e);
         }
     }
 }

@@ -82,6 +82,10 @@ export const bookingService = {
     const filename = `Eventease_ETicket_${safeTitle}_${id.substring(0, 8).toUpperCase()}.pdf`;
     triggerFileDownload(res.data, filename);
   },
+
+  async resendTicketEmail(id: string): Promise<void> {
+    await api.post(`/bookings/${id}/resend-email`);
+  },
 };
 
 export const triggerFileDownload = (blob: Blob, defaultFilename: string) => {

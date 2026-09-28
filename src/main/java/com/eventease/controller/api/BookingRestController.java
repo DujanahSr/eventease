@@ -153,4 +153,15 @@ public class BookingRestController {
         BookingResponseDto booking = bookingApiService.manualConfirmPayment(id, userPrincipal);
         return ResponseEntity.ok(ApiResponse.success("Tiket berhasil dikonfirmasi LUNAS", booking));
     }
+
+    @Operation(summary = "Kirim Ulang E-Ticket ke Email", description = "Mengirimkan berkas e-ticket PDF dan konfirmasi ke alamat email terdaftar pembeli")
+    @PostMapping("/{id}/resend-email")
+    public ResponseEntity<ApiResponse<Void>> resendTicketEmail(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Kirim ulang email e-ticket ID: {} oleh: {}", id, userPrincipal.getUsername());
+        bookingApiService.resendTicketEmail(id, userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("E-Ticket PDF telah berhasil dikirimkan ke alamat email terdaftar Anda.", null));
+    }
 }
