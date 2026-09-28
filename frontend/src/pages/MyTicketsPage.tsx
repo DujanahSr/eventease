@@ -28,7 +28,34 @@ export const MyTicketsPage: React.FC = () => {
     fetchTickets();
   }, []);
 
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  // Auto-sync status pembayaran secara otomatis di latar belakang saat ada tiket MENUNGGU PEMBAYARAN
+  useEffect(() => {
+    const hasPending = tickets.some((t) => t.status === 'PENDING');
+    if (!hasPending) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const freshTickets = await bookingService.getMyTickets();
+        if (freshTickets) {
+          setTickets(freshTickets);
+        }
+      } catch (err) {
+        // silent polling
+      }
+    }, 4000);
+
+    const handleFocus = () => {
+      bookingService.getMyTickets().then((data) => {
+        if (data) setTickets(data);
+      }).catch(() => {});
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [tickets]);
 
   const handlePayPendingTicket = async (ticket: BookingResponseData) => {
     try {
@@ -48,30 +75,28 @@ export const MyTicketsPage: React.FC = () => {
             try {
               await bookingService.verifyPayment(ticket.id, result);
             } catch (err) {
-              console.error('Verify payment error:', err);
+              console.error('Auto verify payment error:', err);
             }
+            fetchTickets();
             Swal.fire({
               icon: 'success',
               title: 'Pembayaran Berhasil!',
-              text: 'Tiket resmi Anda telah aktif dan status terverifikasi.',
+              text: 'Tiket resmi Anda telah aktif dan siap digunakan.',
               confirmButtonColor: '#FFD700',
-            }).then(() => {
-              fetchTickets();
             });
           },
           onPending: async function (result: any) {
             try {
               await bookingService.verifyPayment(ticket.id, result);
             } catch (err) {
-              console.error('Verify payment pending error:', err);
+              console.error('Auto verify pending error:', err);
             }
+            fetchTickets();
             Swal.fire({
               icon: 'info',
               title: 'Menunggu Pembayaran',
               text: 'Silakan selesaikan pembayaran sesuai instruksi Midtrans.',
               confirmButtonColor: '#FFD700',
-            }).then(() => {
-              fetchTickets();
             });
           },
           onError: function () {
@@ -83,6 +108,7 @@ export const MyTicketsPage: React.FC = () => {
             });
           },
           onClose: function () {
+            bookingService.verifyPayment(ticket.id, { forceVerify: false }).catch(() => {});
             fetchTickets();
           },
         });
@@ -101,48 +127,6 @@ export const MyTicketsPage: React.FC = () => {
         text: err.response?.data?.message || 'Gagal memulai sesi pembayaran Midtrans.',
         confirmButtonColor: '#FFD700',
       });
-    }
-  };
-
-  const handleSyncStatus = async (ticket: BookingResponseData) => {
-    setSyncingId(ticket.id);
-    try {
-      Swal.fire({
-        title: 'Sinkronisasi Status...',
-        text: 'Memeriksa status pembayaran ke Midtrans Payment Gateway...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const updated = await bookingService.verifyPayment(ticket.id, { forceVerify: true });
-      Swal.close();
-
-      if (updated.status === 'PAID') {
-        Swal.fire({
-          icon: 'success',
-          title: 'Pembayaran Terverifikasi!',
-          text: 'Status tiket Anda kini telah LUNAS dan tiket PDF telah diterbitkan.',
-          confirmButtonColor: '#FFD700',
-        });
-      } else {
-        Swal.fire({
-          icon: 'info',
-          title: 'Status: ' + updated.status,
-          text: 'Midtrans belum menerima pelunasan untuk pesanan ini atau status transaksi masih pending.',
-          confirmButtonColor: '#FFD700',
-        });
-      }
-      fetchTickets();
-    } catch (err: any) {
-      Swal.close();
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Sinkronisasi',
-        text: err.response?.data?.message || 'Tidak dapat memverifikasi status ke Midtrans saat ini.',
-        confirmButtonColor: '#FFD700',
-      });
-    } finally {
-      setSyncingId(null);
     }
   };
 
@@ -472,20 +456,6 @@ export const MyTicketsPage: React.FC = () => {
                             style={{ fontSize: '13px', borderRadius: '10px' }}
                           >
                             <i className="fas fa-credit-card"></i> Selesaikan Pesanan
-                          </button>
-                          <button
-                            type="button"
-                            disabled={syncingId === t.id}
-                            onClick={() => handleSyncStatus(t)}
-                            className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
-                            style={{
-                              fontSize: '12px',
-                              borderRadius: '10px',
-                              borderColor: '#FFD700',
-                              color: '#FFD700',
-                            }}
-                          >
-                            <i className={`fas ${syncingId === t.id ? 'fa-spinner fa-spin' : 'fa-rotate'}`}></i> Cek / Sinkronkan Status
                           </button>
                           <button
                             type="button"

@@ -62,7 +62,12 @@ public class MidtransService {
                 Map<String, Object> body = response.getBody();
                 if (body != null) {
                     Object tokenObj = body.get("token");
-                    return tokenObj != null ? tokenObj.toString() : null;
+                    if (tokenObj != null) {
+                        String token = tokenObj.toString();
+                        booking.setMidtransOrderId(uniqueOrderId);
+                        booking.setSnapToken(token);
+                        return token;
+                    }
                 }
             }
         } catch (org.springframework.web.client.HttpClientErrorException e) {

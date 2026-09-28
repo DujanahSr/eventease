@@ -34,6 +34,12 @@ public class Booking {
     @Enumerated(EnumType.STRING) 
     private Status status;
 
+    @Column(name = "midtrans_order_id", length = 100)
+    private String midtransOrderId;
+
+    @Column(name = "snap_token", length = 255)
+    private String snapToken;
+
     public enum Status {
         PENDING,
         CONFIRMED,

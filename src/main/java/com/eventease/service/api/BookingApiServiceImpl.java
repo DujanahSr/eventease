@@ -94,23 +94,31 @@ public class BookingApiServiceImpl implements BookingApiService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<BookingResponseDto> getMyBookings(UserPrincipal userPrincipal) {
         log.info("Mengambil riwayat tiket untuk user: {}", userPrincipal.getEmail());
         List<Booking> bookings = bookingRepository.findByUser(userPrincipal.getAkun());
+        for (Booking booking : bookings) {
+            if (booking.getStatus() == Booking.Status.PENDING) {
+                autoCheckPendingBooking(booking);
+            }
+        }
         return bookings.stream()
-                .map(b -> BookingResponseDto.fromEntity(b, null))
+                .map(b -> BookingResponseDto.fromEntity(b, b.getSnapToken()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public BookingResponseDto getBookingById(String bookingId, UserPrincipal userPrincipal) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
 
         validateBookingAccess(booking, userPrincipal);
-        return BookingResponseDto.fromEntity(booking, null);
+        if (booking.getStatus() == Booking.Status.PENDING) {
+            autoCheckPendingBooking(booking);
+        }
+        return BookingResponseDto.fromEntity(booking, booking.getSnapToken());
     }
 
     @Override
@@ -339,6 +347,9 @@ public class BookingApiServiceImpl implements BookingApiService {
         String snapToken = null;
         try {
             snapToken = midtransService.getSnapToken(booking);
+            if (snapToken != null && !snapToken.startsWith("Error")) {
+                bookingRepository.save(booking);
+            }
         } catch (Exception ex) {
             log.error("Gagal meminta Snap Token Midtrans untuk booking {}: {}", bookingId, ex.getMessage());
             throw new BadRequestException("Gagal menghubungkan ke gateway pembayaran Midtrans: " + ex.getMessage());
@@ -430,7 +441,7 @@ public class BookingApiServiceImpl implements BookingApiService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<BookingResponseDto> getAllBookings(UserPrincipal userPrincipal) {
         String role = userPrincipal.getRole() != null ? userPrincipal.getRole().toUpperCase() : "USER";
         List<Booking> bookings;
@@ -443,9 +454,54 @@ public class BookingApiServiceImpl implements BookingApiService {
             bookings = bookingRepository.findByUser(userPrincipal.getAkun());
         }
 
+        for (Booking booking : bookings) {
+            if (booking.getStatus() == Booking.Status.PENDING) {
+                autoCheckPendingBooking(booking);
+            }
+        }
+
         return bookings.stream()
-                .map(b -> BookingResponseDto.fromEntity(b, null))
+                .map(b -> BookingResponseDto.fromEntity(b, b.getSnapToken()))
                 .collect(Collectors.toList());
+    }
+
+    private void autoCheckPendingBooking(Booking booking) {
+        try {
+            boolean isPaid = false;
+            // 1. Cek status ke Midtrans API menggunakan midtransOrderId jika tersedia
+            if (booking.getMidtransOrderId() != null && !booking.getMidtransOrderId().isBlank()) {
+                Map<String, Object> status = midtransService.getTransactionStatus(booking.getMidtransOrderId());
+                if (status != null) {
+                    String txStatus = (String) status.get("transaction_status");
+                    String fraudStatus = (String) status.get("fraud_status");
+                    if ("settlement".equalsIgnoreCase(txStatus) || 
+                        ("capture".equalsIgnoreCase(txStatus) && !"challenge".equalsIgnoreCase(fraudStatus))) {
+                        isPaid = true;
+                    }
+                }
+            }
+
+            // 2. Cek status ke Midtrans API menggunakan booking.getId() jika order_id memakai format UUID asli
+            if (!isPaid) {
+                Map<String, Object> status = midtransService.getTransactionStatus(booking.getId());
+                if (status != null) {
+                    String txStatus = (String) status.get("transaction_status");
+                    String fraudStatus = (String) status.get("fraud_status");
+                    if ("settlement".equalsIgnoreCase(txStatus) || 
+                        ("capture".equalsIgnoreCase(txStatus) && !"challenge".equalsIgnoreCase(fraudStatus))) {
+                        isPaid = true;
+                    }
+                }
+            }
+
+            if (isPaid) {
+                double amount = booking.getTicketCategory().getPrice() * booking.getParticipants();
+                markBookingAsPaidAndFulfill(booking, amount);
+                log.info("Auto-sync: Status booking {} berhasil diverifikasi dan otomatis diubah menjadi PAID", booking.getId());
+            }
+        } catch (Exception ex) {
+            log.warn("Auto-check booking {} dilewati: {}", booking.getId(), ex.getMessage());
+        }
     }
 
     @Override

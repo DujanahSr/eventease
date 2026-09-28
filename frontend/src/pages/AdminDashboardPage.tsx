@@ -19,7 +19,6 @@ export const AdminDashboardPage: React.FC = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [bookings, setBookings] = useState<BookingResponseData[]>([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
-  const [syncingBookingId, setSyncingBookingId] = useState<string | null>(null);
 
   const filteredBookings = useMemo(() => {
     if (bookingStatusFilter === 'ALL') return bookings;
@@ -248,49 +247,6 @@ export const AdminDashboardPage: React.FC = () => {
           confirmButtonColor: '#FFD700',
         });
       }
-    }
-  };
-
-  const handleSyncBookingMidtrans = async (booking: BookingResponseData) => {
-    setSyncingBookingId(booking.id);
-    try {
-      Swal.fire({
-        title: 'Sinkronisasi Midtrans...',
-        text: `Memeriksa status pembayaran order ${booking.id.substring(0, 8)} ke Midtrans API...`,
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const updated = await bookingService.verifyPayment(booking.id, { forceVerify: true });
-      Swal.close();
-
-      if (updated.status === 'PAID') {
-        Swal.fire({
-          icon: 'success',
-          title: 'Status Terverifikasi Lunas!',
-          text: 'Transaksi ini telah diverifikasi sukses di Midtrans dan status diperbarui ke LUNAS.',
-          confirmButtonColor: '#FFD700',
-        });
-      } else {
-        Swal.fire({
-          icon: 'info',
-          title: 'Status Midtrans: ' + updated.status,
-          text: 'Midtrans mengembalikan status: ' + updated.status + '. Pembayaran belum lunas.',
-          confirmButtonColor: '#FFD700',
-        });
-      }
-
-      fetchAdminData();
-    } catch (err: any) {
-      Swal.close();
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Sinkronisasi',
-        text: err.response?.data?.message || 'Gagal memeriksa status ke Midtrans API.',
-        confirmButtonColor: '#FFD700',
-      });
-    } finally {
-      setSyncingBookingId(null);
     }
   };
 
@@ -654,52 +610,27 @@ export const AdminDashboardPage: React.FC = () => {
                         <td className="text-end py-2">
                           <div className="d-flex justify-content-end gap-2">
                             {b.status === 'PENDING' && (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={syncingBookingId === b.id}
-                                  onClick={() => handleSyncBookingMidtrans(b)}
-                                  className="btn btn-sm btn-outline-warning py-1 px-2"
-                                  style={{ fontSize: '11px', borderRadius: '6px' }}
-                                  title="Sinkronkan status transaksi dengan API Midtrans"
-                                >
-                                  <i className={`fas ${syncingBookingId === b.id ? 'fa-spinner fa-spin' : 'fa-rotate'} me-1`}></i>
-                                  Sinkron Midtrans
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleManualConfirm(b)}
-                                  className="btn btn-sm btn-outline-success py-1 px-2"
-                                  style={{ fontSize: '11px', borderRadius: '6px' }}
-                                  title="Setujui pelunasan secara manual"
-                                >
-                                  <i className="fas fa-check-double me-1"></i> Konfirmasi Lunas
-                                </button>
-                              </>
+                              <button
+                                type="button"
+                                onClick={() => handleManualConfirm(b)}
+                                className="btn btn-sm btn-outline-success py-1 px-3"
+                                style={{ fontSize: '11px', borderRadius: '6px' }}
+                                title="Setujui pelunasan secara manual (Cash / Transfer Bank)"
+                              >
+                                <i className="fas fa-check-double me-1"></i> Konfirmasi Lunas
+                              </button>
                             )}
                             {b.status === 'PAID' && (
-                              <>
-                                <a
-                                  href={`/api/bookings/${b.id}/ticket-pdf`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="btn btn-sm btn-outline-light py-1 px-2"
-                                  style={{ fontSize: '11px', borderRadius: '6px' }}
-                                  title="Unduh E-Ticket PDF"
-                                >
-                                  <i className="fas fa-file-pdf me-1 text-danger"></i> PDF
-                                </a>
-                                <button
-                                  type="button"
-                                  disabled={syncingBookingId === b.id}
-                                  onClick={() => handleSyncBookingMidtrans(b)}
-                                  className="btn btn-sm btn-outline-secondary py-1 px-2"
-                                  style={{ fontSize: '11px', borderRadius: '6px' }}
-                                  title="Cek ulang status di Midtrans"
-                                >
-                                  <i className={`fas ${syncingBookingId === b.id ? 'fa-spinner fa-spin' : 'fa-rotate'}`}></i>
-                                </button>
-                              </>
+                              <a
+                                href={`/api/bookings/${b.id}/ticket-pdf`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-sm btn-outline-light py-1 px-3"
+                                style={{ fontSize: '11px', borderRadius: '6px' }}
+                                title="Unduh E-Ticket PDF"
+                              >
+                                <i className="fas fa-file-pdf me-1 text-danger"></i> Unduh PDF
+                              </a>
                             )}
                           </div>
                         </td>
