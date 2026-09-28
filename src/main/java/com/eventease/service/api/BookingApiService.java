@@ -18,4 +18,7 @@ public interface BookingApiService {
     byte[] exportBookingsExcel(String eventId, UserPrincipal userPrincipal);
     BookingResponseDto payBooking(String bookingId, UserPrincipal userPrincipal);
     void cancelBooking(String bookingId, UserPrincipal userPrincipal);
+    BookingResponseDto verifyPayment(String bookingId, Map<String, Object> payload, UserPrincipal userPrincipal);
+    List<BookingResponseDto> getAllBookings(UserPrincipal userPrincipal);
+    BookingResponseDto manualConfirmPayment(String bookingId, UserPrincipal userPrincipal);
 }

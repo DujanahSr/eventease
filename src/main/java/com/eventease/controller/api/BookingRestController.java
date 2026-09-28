@@ -1,6 +1,7 @@
 package com.eventease.controller.api;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -118,5 +119,38 @@ public class BookingRestController {
         log.info("API Request: Batalkan pesanan booking ID: {} oleh user: {}", id, userPrincipal.getUsername());
         bookingApiService.cancelBooking(id, userPrincipal);
         return ResponseEntity.ok(ApiResponse.success("Pesanan tiket berhasil dibatalkan", null));
+    }
+
+    @Operation(summary = "Verifikasi / Sinkronisasi Pembayaran Tiket", description = "Memverifikasi hasil callback Snap dan mengecek status transaksi ke cloud Midtrans secara instan")
+    @PostMapping("/{id}/verify-payment")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> verifyPayment(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Verifikasi pembayaran booking ID: {} oleh user: {}", id, userPrincipal.getUsername());
+        BookingResponseDto booking = bookingApiService.verifyPayment(id, payload, userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("Status pembayaran berhasil diverifikasi", booking));
+    }
+
+    @Operation(summary = "Daftar Seluruh Transaksi Tiket (Admin & Organizer)", description = "Menampilkan semua transaksi booking tiket sesuai hak akses")
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getAllBookings(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Ambil semua transaksi tiket oleh: {}", userPrincipal.getUsername());
+        List<BookingResponseDto> bookings = bookingApiService.getAllBookings(userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("Seluruh data transaksi berhasil dimuat", bookings));
+    }
+
+    @Operation(summary = "Konfirmasi Manual Pembayaran (Admin & Organizer)", description = "Menandai tiket menjadi LUNAS (PAID) secara manual untuk transaksi offline/transfer")
+    @PostMapping("/{id}/manual-confirm")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> manualConfirmPayment(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Konfirmasi manual pembayaran booking ID: {} oleh: {}", id, userPrincipal.getUsername());
+        BookingResponseDto booking = bookingApiService.manualConfirmPayment(id, userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("Tiket berhasil dikonfirmasi LUNAS", booking));
     }
 }

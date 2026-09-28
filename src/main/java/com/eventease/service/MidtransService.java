@@ -76,4 +76,29 @@ public class MidtransService {
         
         return null;
     }
+
+    public Map<String, Object> getTransactionStatus(String orderId) {
+        if (orderId == null || orderId.isBlank()) return null;
+        RestTemplate restTemplate = new RestTemplate();
+        String url = isProduction ? 
+                "https://api.midtrans.com/v2/" + orderId + "/status" : 
+                "https://api.sandbox.midtrans.com/v2/" + orderId + "/status";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String authHeader = "Basic " + Base64.getEncoder().encodeToString((serverKey.trim() + ":").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        headers.set("Authorization", authHeader);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        try {
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, Map.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            System.err.println("Gagal mengecek status transaksi Midtrans orderId " + orderId + ": " + e.getMessage());
+        }
+        return null;
+    }
 }

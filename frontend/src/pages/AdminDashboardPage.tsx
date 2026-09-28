@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventService } from '../services/eventService';
-import { bookingService, triggerFileDownload } from '../services/bookingService';
+import { bookingService, triggerFileDownload, BookingResponseData } from '../services/bookingService';
 import { adminService } from '../services/adminService';
 import { EventSummary, Category, User } from '../types';
 import { EventEaseLogo } from '../components/EventEaseLogo';
@@ -11,12 +11,20 @@ import Swal from 'sweetalert2';
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'categories' | 'events'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'categories' | 'events' | 'bookings'>('overview');
 
   const [events, setEvents] = useState<EventSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [bookings, setBookings] = useState<BookingResponseData[]>([]);
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
+  const [syncingBookingId, setSyncingBookingId] = useState<string | null>(null);
+
+  const filteredBookings = useMemo(() => {
+    if (bookingStatusFilter === 'ALL') return bookings;
+    return bookings.filter((b) => b.status === bookingStatusFilter);
+  }, [bookings, bookingStatusFilter]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -31,15 +39,17 @@ export const AdminDashboardPage: React.FC = () => {
   const fetchAdminData = async () => {
     setIsLoading(true);
     try {
-      const [eventData, catData, userData] = await Promise.all([
+      const [eventData, catData, userData, bookingData] = await Promise.all([
         eventService.getEvents('', '', 0, 30),
         eventService.getCategories(),
         adminService.getAllUsers(0, 20),
+        bookingService.getAllBookings().catch(() => [] as BookingResponseData[]),
       ]);
       setEvents(eventData.content || []);
       setCategories(catData || []);
       setUsers(userData.content || []);
       setTotalUsers(userData.totalElements || (userData.content ? userData.content.length : 0));
+      setBookings(bookingData || []);
     } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
@@ -194,6 +204,96 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const formatRupiah = (val: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+  };
+
+  const handleManualConfirm = async (booking: BookingResponseData) => {
+    const confirm = await Swal.fire({
+      title: 'Konfirmasi Pembayaran Manual?',
+      text: `Setujui pelunasan tiket pesanan ${booking.id.substring(0, 8)} untuk ${booking.buyerName || 'Pembeli'} senilai ${formatRupiah(booking.totalAmount)}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Konfirmasi Lunas',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#22c55e',
+      cancelButtonColor: '#4b5563',
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        Swal.fire({
+          title: 'Memproses Konfirmasi...',
+          text: 'Mengubah status pesanan dan menerbitkan e-ticket...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
+        await bookingService.manualConfirmPayment(booking.id);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Pesanan Telah Lunas!',
+          text: 'Status tiket diperbarui menjadi LUNAS dan tiket resmi telah aktif.',
+          timer: 1800,
+          showConfirmButton: false,
+        });
+
+        fetchAdminData();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Konfirmasi',
+          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
+          confirmButtonColor: '#FFD700',
+        });
+      }
+    }
+  };
+
+  const handleSyncBookingMidtrans = async (booking: BookingResponseData) => {
+    setSyncingBookingId(booking.id);
+    try {
+      Swal.fire({
+        title: 'Sinkronisasi Midtrans...',
+        text: `Memeriksa status pembayaran order ${booking.id.substring(0, 8)} ke Midtrans API...`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const updated = await bookingService.verifyPayment(booking.id, { forceVerify: true });
+      Swal.close();
+
+      if (updated.status === 'PAID') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Status Terverifikasi Lunas!',
+          text: 'Transaksi ini telah diverifikasi sukses di Midtrans dan status diperbarui ke LUNAS.',
+          confirmButtonColor: '#FFD700',
+        });
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'Status Midtrans: ' + updated.status,
+          text: 'Midtrans mengembalikan status: ' + updated.status + '. Pembayaran belum lunas.',
+          confirmButtonColor: '#FFD700',
+        });
+      }
+
+      fetchAdminData();
+    } catch (err: any) {
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Sinkronisasi',
+        text: err.response?.data?.message || 'Gagal memeriksa status ke Midtrans API.',
+        confirmButtonColor: '#FFD700',
+      });
+    } finally {
+      setSyncingBookingId(null);
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Background Subtle Geometric Pattern */}
@@ -220,6 +320,14 @@ export const AdminDashboardPage: React.FC = () => {
             >
               <i className="fas fa-chart-line"></i>
               <span>Ringkasan Platform</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'bookings' ? 'active' : ''}`}
+            >
+              <i className="fas fa-receipt text-warning"></i>
+              <span>Transaksi & Tiket ({bookings.length})</span>
             </button>
 
             <button
@@ -372,11 +480,14 @@ export const AdminDashboardPage: React.FC = () => {
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{ width: '48px', height: '48px', background: 'rgba(34, 197, 94, 0.1)', flexShrink: 0 }}
               >
-                <i className="fas fa-layer-group text-success fs-4"></i>
+                <i className="fas fa-receipt text-success fs-4"></i>
               </div>
               <div>
-                <div className="text-secondary small fw-medium">Kategori Acara Resmi</div>
-                <div className="fs-3 fw-bold text-white">{categories.length} Kategori</div>
+                <div className="text-secondary small fw-medium">Transaksi Tiket</div>
+                <div className="fs-3 fw-bold text-white">{bookings.length} Pesanan</div>
+                <div className="text-success small fw-semibold">
+                  <i className="fas fa-check-circle me-1"></i> {bookings.filter((b) => b.status === 'PAID').length} Lunas
+                </div>
               </div>
             </div>
           </div>
@@ -387,17 +498,219 @@ export const AdminDashboardPage: React.FC = () => {
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{ width: '48px', height: '48px', background: 'rgba(234, 179, 8, 0.1)', flexShrink: 0 }}
               >
-                <i className="fas fa-server text-warning fs-4"></i>
+                <i className="fas fa-layer-group text-warning fs-4"></i>
               </div>
               <div>
-                <div className="text-secondary small fw-medium">Kesehatan Infrastruktur</div>
-                <div className="fs-6 fw-bold text-success">
-                  <i className="fas fa-check-circle me-1"></i> Postgres & Redis Live
+                <div className="text-secondary small fw-medium">Kategori Resmi & Sistem</div>
+                <div className="fs-3 fw-bold text-white">{categories.length} Kategori</div>
+                <div className="text-success small fw-semibold">
+                  <i className="fas fa-circle text-success me-1" style={{ fontSize: '8px' }}></i> Postgres & Midtrans Live
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* TAB TRANSAKSI: AUDIT TRANSAKSI & PEMBAYARAN TIKET */}
+        {(activeTab === 'overview' || activeTab === 'bookings') && (
+          <div className="luxury-glass-card p-4 mb-4">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+              <div>
+                <div className="d-flex align-items-center gap-2 mb-1">
+                  <span className="gold-glow-badge" style={{ fontSize: '10px' }}>
+                    <i className="fas fa-money-bill-wave text-warning me-1"></i> MONITORING FINANSIAL & GATEWAY
+                  </span>
+                </div>
+                <h3 className="kikk-title m-0 fs-5">
+                  <i className="fas fa-receipt text-warning me-2"></i> Audit Transaksi & Pelunasan Tiket ({bookings.length})
+                </h3>
+                <p className="text-secondary small m-0 mt-1">
+                  Pantau status pelunasan Midtrans Snap, lakukan sinkronisasi verifikasi instan, atau konfirmasi manual jika diperlukan.
+                </p>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="d-flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBookingStatusFilter('ALL')}
+                  className={`category-pill ${bookingStatusFilter === 'ALL' ? 'active' : ''}`}
+                  style={{ fontSize: '12px', padding: '6px 14px' }}
+                >
+                  Semua ({bookings.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingStatusFilter('PAID')}
+                  className={`category-pill ${bookingStatusFilter === 'PAID' ? 'active' : ''}`}
+                  style={{ fontSize: '12px', padding: '6px 14px' }}
+                >
+                  <i className="fas fa-circle-check text-success me-1"></i> Lunas ({bookings.filter((b) => b.status === 'PAID').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingStatusFilter('PENDING')}
+                  className={`category-pill ${bookingStatusFilter === 'PENDING' ? 'active' : ''}`}
+                  style={{ fontSize: '12px', padding: '6px 14px' }}
+                >
+                  <i className="fas fa-hourglass-half text-warning me-1"></i> Menunggu Bayar ({bookings.filter((b) => b.status === 'PENDING').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingStatusFilter('CANCELLED')}
+                  className={`category-pill ${bookingStatusFilter === 'CANCELLED' ? 'active' : ''}`}
+                  style={{ fontSize: '12px', padding: '6px 14px' }}
+                >
+                  <i className="fas fa-ban text-secondary me-1"></i> Batal ({bookings.filter((b) => b.status === 'CANCELLED').length})
+                </button>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border text-warning" role="status"></div>
+                <div className="text-secondary small mt-2">Memuat transaksi platform...</div>
+              </div>
+            ) : filteredBookings.length === 0 ? (
+              <div className="text-center py-4 text-secondary">
+                <i className="fas fa-inbox fa-2x mb-2 d-block text-warning" style={{ opacity: 0.5 }}></i>
+                Tidak ada data transaksi tiket untuk filter status ini.
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
+                  <thead>
+                    <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
+                      <th className="py-2">ID PESANAN & TGL</th>
+                      <th className="py-2">ACARA & KATEGORI</th>
+                      <th className="py-2">PEMBELI</th>
+                      <th className="py-2 text-center">KURSI</th>
+                      <th className="py-2">TOTAL BAYAR</th>
+                      <th className="py-2">STATUS</th>
+                      <th className="py-2 text-end">KONTROL / AKSI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((b) => (
+                      <tr key={b.id} style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                        <td className="py-2 font-monospace">
+                          <div className="text-white fw-bold" style={{ fontSize: '12px' }}>
+                            #{b.id.substring(0, 8).toUpperCase()}
+                          </div>
+                          <div className="text-secondary" style={{ fontSize: '10px' }}>
+                            {b.bookingDate || '-'}
+                          </div>
+                        </td>
+                        <td className="py-2">
+                          <div className="text-white fw-semibold" style={{ fontSize: '13px' }}>
+                            {b.eventName}
+                          </div>
+                          <div className="text-warning small" style={{ fontSize: '11px' }}>
+                            {b.ticketCategoryName || 'General Pass'}
+                          </div>
+                        </td>
+                        <td className="py-2">
+                          <div className="text-white fw-medium" style={{ fontSize: '12px' }}>
+                            {b.buyerName || 'Pembeli'}
+                          </div>
+                          <div className="text-secondary" style={{ fontSize: '11px' }}>
+                            {b.buyerEmail || '-'}
+                          </div>
+                        </td>
+                        <td className="text-center py-2">
+                          <span className="badge bg-secondary" style={{ fontSize: '11px' }}>
+                            {b.quantity} Kursi
+                          </span>
+                        </td>
+                        <td className="py-2">
+                          <div className="text-white fw-bold" style={{ fontSize: '13px' }}>
+                            {formatRupiah(b.totalAmount)}
+                          </div>
+                        </td>
+                        <td className="py-2">
+                          {b.status === 'PAID' ? (
+                            <span
+                              className="badge bg-success text-white"
+                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
+                            >
+                              <i className="fas fa-circle-check me-1"></i> LUNAS
+                            </span>
+                          ) : b.status === 'PENDING' ? (
+                            <span
+                              className="badge bg-warning text-dark"
+                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
+                            >
+                              <i className="fas fa-hourglass-half me-1"></i> MENUNGGU BAYAR
+                            </span>
+                          ) : (
+                            <span
+                              className="badge bg-secondary text-white"
+                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
+                            >
+                              {b.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-end py-2">
+                          <div className="d-flex justify-content-end gap-2">
+                            {b.status === 'PENDING' && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={syncingBookingId === b.id}
+                                  onClick={() => handleSyncBookingMidtrans(b)}
+                                  className="btn btn-sm btn-outline-warning py-1 px-2"
+                                  style={{ fontSize: '11px', borderRadius: '6px' }}
+                                  title="Sinkronkan status transaksi dengan API Midtrans"
+                                >
+                                  <i className={`fas ${syncingBookingId === b.id ? 'fa-spinner fa-spin' : 'fa-rotate'} me-1`}></i>
+                                  Sinkron Midtrans
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleManualConfirm(b)}
+                                  className="btn btn-sm btn-outline-success py-1 px-2"
+                                  style={{ fontSize: '11px', borderRadius: '6px' }}
+                                  title="Setujui pelunasan secara manual"
+                                >
+                                  <i className="fas fa-check-double me-1"></i> Konfirmasi Lunas
+                                </button>
+                              </>
+                            )}
+                            {b.status === 'PAID' && (
+                              <>
+                                <a
+                                  href={`/api/bookings/${b.id}/ticket-pdf`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn btn-sm btn-outline-light py-1 px-2"
+                                  style={{ fontSize: '11px', borderRadius: '6px' }}
+                                  title="Unduh E-Ticket PDF"
+                                >
+                                  <i className="fas fa-file-pdf me-1 text-danger"></i> PDF
+                                </a>
+                                <button
+                                  type="button"
+                                  disabled={syncingBookingId === b.id}
+                                  onClick={() => handleSyncBookingMidtrans(b)}
+                                  className="btn btn-sm btn-outline-secondary py-1 px-2"
+                                  style={{ fontSize: '11px', borderRadius: '6px' }}
+                                  title="Cek ulang status di Midtrans"
+                                >
+                                  <i className={`fas ${syncingBookingId === b.id ? 'fa-spinner fa-spin' : 'fa-rotate'}`}></i>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* TAB 1: KELOLA PENGGUNA PLATFORM (Eksklusif Super Admin) */}
         {(activeTab === 'overview' || activeTab === 'users') && (

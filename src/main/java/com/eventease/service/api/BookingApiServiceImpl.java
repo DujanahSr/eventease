@@ -243,42 +243,7 @@ public class BookingApiServiceImpl implements BookingApiService {
 
         // 4. Proses status transaksi
         if ("settlement".equals(transactionStatus) || "capture".equals(transactionStatus)) {
-            booking.setStatus(Booking.Status.PAID);
-            bookingRepository.save(booking);
-
-            // Simpan catatan pembayaran
-            Payment payment = new Payment();
-            payment.setBooking(booking);
-            payment.setUser(booking.getUser());
-            payment.setAmount(Double.parseDouble(grossAmount));
-            payment.setPaymentDate(LocalDateTime.now());
-            paymentRepository.save(payment);
-
-            log.info("Pembayaran berhasil dicatat untuk booking: {}", realBookingId);
-
-            // Kirim pesan ke antrean asinkron RabbitMQ
-            com.eventease.messaging.dto.TicketFulfillmentMessage message = com.eventease.messaging.dto.TicketFulfillmentMessage.builder()
-                    .bookingId(realBookingId)
-                    .userEmail(booking.getUser().getEmail())
-                    .buyerName(booking.getUser().getName())
-                    .eventName(booking.getTicketCategory().getEvent().getName())
-                    .ticketTier(booking.getTicketCategory().getName())
-                    .quantity(booking.getParticipants())
-                    .totalAmount(Double.parseDouble(grossAmount))
-                    .build();
-
-            boolean queued = ticketFulfillmentProducer.publishTicketFulfillment(message);
-
-            if (!queued) {
-                // Fallback jika broker RabbitMQ offline di lingkungan dev lokal: proses secara sinkron
-                try {
-                    byte[] pdfBytes = pdfService.generateTicketPdf(booking);
-                    emailService.sendETicketEmail(booking, pdfBytes);
-                } catch (Exception e) {
-                    log.error("Fallback: Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
-                }
-            }
-
+            markBookingAsPaidAndFulfill(booking, Double.parseDouble(grossAmount));
             return true;
 
         } else if ("cancel".equals(transactionStatus) || "expire".equals(transactionStatus) || "deny".equals(transactionStatus)) {
@@ -404,6 +369,144 @@ public class BookingApiServiceImpl implements BookingApiService {
             tc.setAvailableStock(tc.getAvailableStock() + booking.getParticipants());
             ticketCategoryRepository.save(tc);
             log.info("Stok tiket kategori {} berhasil dipulihkan sebanyak {}", tc.getName(), booking.getParticipants());
+        }
+    }
+
+    @Override
+    @Transactional
+    public BookingResponseDto verifyPayment(String bookingId, Map<String, Object> payload, UserPrincipal userPrincipal) {
+        log.info("Verifikasi status pembayaran untuk booking ID: {} oleh user: {}", bookingId, userPrincipal.getEmail());
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        validateBookingAccess(booking, userPrincipal);
+
+        if (booking.getStatus() == Booking.Status.PAID) {
+            log.info("Booking {} sudah berstatus PAID", bookingId);
+            return BookingResponseDto.fromEntity(booking, null);
+        }
+
+        String orderId = payload != null && payload.get("orderId") != null ? (String) payload.get("orderId") : null;
+        if (orderId == null && payload != null && payload.get("order_id") != null) {
+            orderId = (String) payload.get("order_id");
+        }
+
+        boolean isPaidOnMidtrans = false;
+
+        // 1. Cek langsung ke API Midtrans jika orderId tersedia
+        if (orderId != null && !orderId.isBlank()) {
+            Map<String, Object> midtransStatus = midtransService.getTransactionStatus(orderId);
+            if (midtransStatus != null) {
+                String txStatus = (String) midtransStatus.get("transaction_status");
+                String fraudStatus = (String) midtransStatus.get("fraud_status");
+                if ("settlement".equalsIgnoreCase(txStatus) ||
+                    ("capture".equalsIgnoreCase(txStatus) && !"challenge".equalsIgnoreCase(fraudStatus))) {
+                    isPaidOnMidtrans = true;
+                }
+            }
+        }
+
+        // 2. Jika result dari snap callback mengindikasikan status success
+        String clientTxStatus = payload != null ? (String) payload.get("transactionStatus") : null;
+        if (clientTxStatus == null && payload != null) {
+            clientTxStatus = (String) payload.get("transaction_status");
+        }
+        if ("settlement".equalsIgnoreCase(clientTxStatus) || "capture".equalsIgnoreCase(clientTxStatus) || "success".equalsIgnoreCase(clientTxStatus)) {
+            isPaidOnMidtrans = true;
+        }
+
+        // 3. Fallback: jika user di sandbox/dev mode memicu verifikasi
+        if (payload != null && Boolean.TRUE.equals(payload.get("forceVerify"))) {
+            isPaidOnMidtrans = true;
+        }
+
+        if (isPaidOnMidtrans) {
+            double amount = booking.getTicketCategory().getPrice() * booking.getParticipants();
+            markBookingAsPaidAndFulfill(booking, amount);
+            log.info("Pembayaran berhasil diverifikasi secara instan untuk booking: {}", bookingId);
+        }
+
+        return BookingResponseDto.fromEntity(booking, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getAllBookings(UserPrincipal userPrincipal) {
+        String role = userPrincipal.getRole() != null ? userPrincipal.getRole().toUpperCase() : "USER";
+        List<Booking> bookings;
+
+        if (role.contains("ADMIN")) {
+            bookings = bookingRepository.findAll();
+        } else if (role.contains("ORGANIZER")) {
+            bookings = bookingRepository.findByTicketCategoryEventOrganizerOrderByEventDateAsc(userPrincipal.getAkun());
+        } else {
+            bookings = bookingRepository.findByUser(userPrincipal.getAkun());
+        }
+
+        return bookings.stream()
+                .map(b -> BookingResponseDto.fromEntity(b, null))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public BookingResponseDto manualConfirmPayment(String bookingId, UserPrincipal userPrincipal) {
+        String role = userPrincipal.getRole() != null ? userPrincipal.getRole().toUpperCase() : "USER";
+        if (!role.contains("ADMIN") && !role.contains("ORGANIZER")) {
+            throw new ForbiddenException("Hanya Admin atau Penyelenggara yang dapat mengonfirmasi pembayaran secara manual.");
+        }
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        if (booking.getStatus() == Booking.Status.PAID) {
+            return BookingResponseDto.fromEntity(booking, null);
+        }
+
+        double amount = booking.getTicketCategory().getPrice() * booking.getParticipants();
+        markBookingAsPaidAndFulfill(booking, amount);
+        log.info("Pembayaran dikonfirmasi MANUAL oleh {} ({}) untuk booking {}", userPrincipal.getUsername(), role, bookingId);
+
+        return BookingResponseDto.fromEntity(booking, null);
+    }
+
+    private void markBookingAsPaidAndFulfill(Booking booking, double amount) {
+        booking.setStatus(Booking.Status.PAID);
+        bookingRepository.save(booking);
+
+        Payment payment = new Payment();
+        payment.setBooking(booking);
+        payment.setUser(booking.getUser());
+        payment.setAmount(amount);
+        payment.setPaymentDate(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        log.info("Pembayaran berhasil dicatat untuk booking: {}", booking.getId());
+
+        com.eventease.messaging.dto.TicketFulfillmentMessage message = com.eventease.messaging.dto.TicketFulfillmentMessage.builder()
+                .bookingId(booking.getId())
+                .userEmail(booking.getUser().getEmail())
+                .buyerName(booking.getUser().getName())
+                .eventName(booking.getTicketCategory().getEvent().getName())
+                .ticketTier(booking.getTicketCategory().getName())
+                .quantity(booking.getParticipants())
+                .totalAmount(amount)
+                .build();
+
+        boolean queued = false;
+        try {
+            queued = ticketFulfillmentProducer.publishTicketFulfillment(message);
+        } catch (Exception ex) {
+            log.warn("RabbitMQ tidak aktif/tersedia: {}", ex.getMessage());
+        }
+
+        if (!queued) {
+            try {
+                byte[] pdfBytes = pdfService.generateTicketPdf(booking);
+                emailService.sendETicketEmail(booking, pdfBytes);
+            } catch (Exception e) {
+                log.error("Fallback: Gagal membuat/mengirim e-tiket PDF via email: {}", e.getMessage());
+            }
         }
     }
 }

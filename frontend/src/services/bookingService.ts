@@ -58,6 +58,21 @@ export const bookingService = {
   async cancelBooking(id: string): Promise<void> {
     await api.post(`/bookings/${id}/cancel`);
   },
+
+  async verifyPayment(id: string, payload?: any): Promise<BookingResponseData> {
+    const res = await api.post<ApiResponse<BookingResponseData>>(`/bookings/${id}/verify-payment`, payload || {});
+    return res.data.data;
+  },
+
+  async getAllBookings(): Promise<BookingResponseData[]> {
+    const res = await api.get<ApiResponse<BookingResponseData[]>>('/bookings/all');
+    return res.data.data;
+  },
+
+  async manualConfirmPayment(id: string): Promise<BookingResponseData> {
+    const res = await api.post<ApiResponse<BookingResponseData>>(`/bookings/${id}/manual-confirm`);
+    return res.data.data;
+  },
 };
 
 export const triggerFileDownload = (blob: Blob, defaultFilename: string) => {
