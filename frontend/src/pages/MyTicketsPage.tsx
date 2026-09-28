@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingService, BookingResponseData } from '../services/bookingService';
 import { UserFloatingDock } from '../components/UserFloatingDock';
+import Swal from 'sweetalert2';
 
 export const MyTicketsPage: React.FC = () => {
   const { user } = useAuth();
@@ -11,20 +12,119 @@ export const MyTicketsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
   const [sortBy, setSortBy] = useState<'NEWEST' | 'EVENT_DATE' | 'PRICE_HIGH'>('NEWEST');
 
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    try {
+      const data = await bookingService.getMyTickets();
+      setTickets(data || []);
+    } catch (err) {
+      console.error('Failed to load tickets', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTickets = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bookingService.getMyTickets();
-        setTickets(data || []);
-      } catch (err) {
-        console.error('Failed to load tickets', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchTickets();
   }, []);
+
+  const handlePayPendingTicket = async (ticket: BookingResponseData) => {
+    try {
+      Swal.fire({
+        title: 'Menyiapkan Pembayaran...',
+        text: 'Menghubungkan ke Gateway Pembayaran Midtrans Snap...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const res = await bookingService.payBooking(ticket.id);
+
+      if (res.snapToken && (window as any).snap) {
+        Swal.close();
+        (window as any).snap.pay(res.snapToken, {
+          onSuccess: function () {
+            Swal.fire({
+              icon: 'success',
+              title: 'Pembayaran Berhasil!',
+              text: 'Tiket resmi Anda telah aktif dan siap digunakan.',
+              confirmButtonColor: '#FFD700',
+            }).then(() => {
+              fetchTickets();
+            });
+          },
+          onPending: function () {
+            Swal.fire({
+              icon: 'info',
+              title: 'Menunggu Pembayaran',
+              text: 'Silakan selesaikan pembayaran sesuai instruksi Midtrans.',
+              confirmButtonColor: '#FFD700',
+            }).then(() => {
+              fetchTickets();
+            });
+          },
+          onError: function () {
+            Swal.fire({
+              icon: 'error',
+              title: 'Pembayaran Gagal',
+              text: 'Terjadi kendala saat pembayaran. Silakan coba kembali.',
+              confirmButtonColor: '#FFD700',
+            });
+          },
+          onClose: function () {
+            fetchTickets();
+          },
+        });
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Gateway Tidak Siap',
+          text: 'Midtrans Snap gateway tidak dapat dimuat saat ini.',
+          confirmButtonColor: '#FFD700',
+        });
+      }
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Memproses',
+        text: err.response?.data?.message || 'Gagal memulai sesi pembayaran Midtrans.',
+        confirmButtonColor: '#FFD700',
+      });
+    }
+  };
+
+  const handleCancelBooking = async (ticket: BookingResponseData) => {
+    const result = await Swal.fire({
+      title: 'Batalkan Pesanan Ini?',
+      text: `Pesanan untuk "${ticket.eventName}" akan dibatalkan dan kuota kursi dikembalikan.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Batalkan',
+      cancelButtonText: 'Kembali',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#4b5563',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await bookingService.cancelBooking(ticket.id);
+        Swal.fire({
+          icon: 'success',
+          title: 'Pesanan Dibatalkan',
+          text: 'Pesanan tiket Anda telah berhasil dibatalkan.',
+          timer: 1600,
+          showConfirmButton: false,
+        });
+        fetchTickets();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Membatalkan',
+          text: err.response?.data?.message || 'Terjadi kesalahan saat membatalkan pesanan.',
+          confirmButtonColor: '#FFD700',
+        });
+      }
+    }
+  };
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
@@ -309,14 +409,37 @@ export const MyTicketsPage: React.FC = () => {
                         >
                           <i className="fas fa-file-pdf"></i> Unduh E-Ticket (PDF)
                         </a>
+                      ) : t.status === 'PENDING' ? (
+                        <div className="d-flex flex-column gap-2 w-100">
+                          <button
+                            type="button"
+                            onClick={() => handlePayPendingTicket(t)}
+                            className="btn-kikk w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
+                            style={{ fontSize: '13px', borderRadius: '10px' }}
+                          >
+                            <i className="fas fa-credit-card"></i> Selesaikan Pesanan
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelBooking(t)}
+                            className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-2 py-1"
+                            style={{
+                              fontSize: '11px',
+                              borderRadius: '8px',
+                              borderColor: 'rgba(255, 255, 255, 0.15)',
+                              color: 'rgba(255, 255, 255, 0.5)',
+                            }}
+                          >
+                            <i className="fas fa-xmark"></i> Batalkan Pesanan
+                          </button>
+                        </div>
                       ) : (
-                        <Link
-                          to={`/events`}
-                          className="btn-kikk-outline w-100 d-inline-flex align-items-center justify-content-center gap-2 py-2"
-                          style={{ fontSize: '13px', borderRadius: '10px' }}
+                        <div
+                          className="text-secondary small py-2 px-3 rounded"
+                          style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
                         >
-                          <i className="fas fa-credit-card"></i> Selesaikan Pesanan
-                        </Link>
+                          <i className="fas fa-ban me-1 text-danger"></i> Pesanan Telah Dibatalkan
+                        </div>
                       )}
                     </div>
                   </div>

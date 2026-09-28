@@ -357,4 +357,53 @@ public class BookingApiServiceImpl implements BookingApiService {
             throw new RuntimeException("Gagal mengekspor laporan ke Excel: " + ex.getMessage(), ex);
         }
     }
+
+    @Override
+    @Transactional
+    public BookingResponseDto payBooking(String bookingId, UserPrincipal userPrincipal) {
+        log.info("Meminta Snap Token untuk booking ID: {} oleh user: {}", bookingId, userPrincipal.getEmail());
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        validateBookingAccess(booking, userPrincipal);
+
+        if (booking.getStatus() != Booking.Status.PENDING) {
+            throw new BadRequestException("Pesanan ini tidak dapat dibayar karena status saat ini: " + booking.getStatus());
+        }
+
+        String snapToken = null;
+        try {
+            snapToken = midtransService.getSnapToken(booking);
+        } catch (Exception ex) {
+            log.error("Gagal meminta Snap Token Midtrans untuk booking {}: {}", bookingId, ex.getMessage());
+            throw new BadRequestException("Gagal menghubungkan ke gateway pembayaran Midtrans: " + ex.getMessage());
+        }
+
+        return BookingResponseDto.fromEntity(booking, snapToken);
+    }
+
+    @Override
+    @Transactional
+    public void cancelBooking(String bookingId, UserPrincipal userPrincipal) {
+        log.info("Membatalkan pesanan booking ID: {} oleh user: {}", bookingId, userPrincipal.getEmail());
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pesanan Tiket", "id", bookingId));
+
+        validateBookingAccess(booking, userPrincipal);
+
+        if (booking.getStatus() != Booking.Status.PENDING) {
+            throw new BadRequestException("Hanya pesanan berstatus MENUNGGU PEMBAYARAN yang dapat dibatalkan.");
+        }
+
+        booking.setStatus(Booking.Status.CANCELED);
+        bookingRepository.save(booking);
+
+        // Kembalikan kuota tiket ke kategori terkait
+        TicketCategory tc = booking.getTicketCategory();
+        if (tc != null) {
+            tc.setAvailableStock(tc.getAvailableStock() + booking.getParticipants());
+            ticketCategoryRepository.save(tc);
+            log.info("Stok tiket kategori {} berhasil dipulihkan sebanyak {}", tc.getName(), booking.getParticipants());
+        }
+    }
 }

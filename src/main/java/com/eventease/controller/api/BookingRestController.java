@@ -97,4 +97,26 @@ public class BookingRestController {
 
         return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
     }
+
+    @Operation(summary = "Selesaikan Pembayaran Pesanan", description = "Mendapatkan Snap Token Midtrans untuk menyelesaikan pembayaran tiket yang berstatus PENDING")
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> payBooking(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Selesaikan pembayaran booking ID: {} oleh user: {}", id, userPrincipal.getUsername());
+        BookingResponseDto booking = bookingApiService.payBooking(id, userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("Sesi pembayaran berhasil dibuat", booking));
+    }
+
+    @Operation(summary = "Batalkan Pesanan Tiket", description = "Membatalkan tiket yang berstatus PENDING dan mengembalikan kuota kursi")
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelBooking(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("API Request: Batalkan pesanan booking ID: {} oleh user: {}", id, userPrincipal.getUsername());
+        bookingApiService.cancelBooking(id, userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success("Pesanan tiket berhasil dibatalkan", null));
+    }
 }

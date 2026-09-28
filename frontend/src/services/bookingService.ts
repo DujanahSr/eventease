@@ -49,6 +49,15 @@ export const bookingService = {
     });
     return res.data;
   },
+
+  async payBooking(id: string): Promise<BookingResponseData> {
+    const res = await api.post<ApiResponse<BookingResponseData>>(`/bookings/${id}/pay`);
+    return res.data.data;
+  },
+
+  async cancelBooking(id: string): Promise<void> {
+    await api.post(`/bookings/${id}/cancel`);
+  },
 };
 
 export const triggerFileDownload = (blob: Blob, defaultFilename: string) => {
