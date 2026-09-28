@@ -35,7 +35,7 @@ export const UserFloatingDock: React.FC<UserFloatingDockProps> = ({ onOpenSettin
           </span>
         </div>
 
-        {/* Overview Tab */}
+        {/* Dashboard Tab */}
         <NavLink
           to="/home-user"
           end
@@ -46,8 +46,8 @@ export const UserFloatingDock: React.FC<UserFloatingDockProps> = ({ onOpenSettin
           }
           style={{ fontSize: '13px', transition: 'all 0.25s ease' }}
         >
-          <i className="fas fa-home-user"></i>
-          <span className="d-none d-md-inline">Profil & Ringkasan</span>
+          <i className="fas fa-chart-pie"></i>
+          <span className="d-none d-md-inline">Dashboard</span>
         </NavLink>
 
         {/* My Tickets Tab */}
@@ -78,18 +78,19 @@ export const UserFloatingDock: React.FC<UserFloatingDockProps> = ({ onOpenSettin
           <span className="d-none d-md-inline">Jelajahi Acara</span>
         </NavLink>
 
-        {/* Edit Settings Trigger */}
-        {onOpenSettings && (
-          <button
-            onClick={onOpenSettings}
-            className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill text-decoration-none border-0 bg-transparent text-white text-opacity-75 hover-gold cursor-pointer"
-            style={{ fontSize: '13px', transition: 'all 0.25s ease' }}
-            title="Buka pengaturan profil"
-          >
-            <i className="fas fa-sliders"></i>
-            <span className="d-none d-md-inline">Pengaturan</span>
-          </button>
-        )}
+        {/* Profile Tab */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `d-flex align-items-center gap-2 px-3 py-2 rounded-pill text-decoration-none transition-all ${
+              isActive ? 'bg-warning text-dark fw-bold' : 'text-white text-opacity-75 hover-gold'
+            }`
+          }
+          style={{ fontSize: '13px', transition: 'all 0.25s ease' }}
+        >
+          <i className="fas fa-user-circle"></i>
+          <span className="d-none d-md-inline">Profil</span>
+        </NavLink>
       </div>
     </div>
   );

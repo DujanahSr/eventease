@@ -10,18 +10,10 @@ export const UserDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      setIsLoading(true);
-      try {
-        const data = await bookingService.getMyTickets();
-        setTickets(data || []);
-      } catch (err) {
-        console.error('Failed to load tickets', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTickets();
+    bookingService.getMyTickets()
+      .then((data) => setTickets(data || []))
+      .catch((err) => console.error('Failed to load tickets', err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const fmt = (val: number) =>
@@ -44,9 +36,8 @@ export const UserDashboardPage: React.FC = () => {
   return (
     <div className="position-relative min-vh-100" style={{ backgroundColor: '#0a0514', color: '#fff' }}>
 
-      {/* ═══ SECTION 1: INFORMATIONAL HERO BANNER ═══ */}
+      {/* ═══ SECTION 1: PLATFORM INFO HERO BANNER ═══ */}
       <section className="position-relative overflow-hidden" style={{ minHeight: '400px' }}>
-        {/* Cinematic BG */}
         <div className="position-absolute top-0 start-0 w-100 h-100" style={{
           backgroundImage: "url('/images/user_dashboard_bg.jpg')",
           backgroundSize: 'cover', backgroundPosition: 'center',
@@ -56,46 +47,75 @@ export const UserDashboardPage: React.FC = () => {
           background: 'linear-gradient(180deg, rgba(10,5,20,0.2) 0%, rgba(10,5,20,0.92) 100%)',
         }} />
 
-        <div className="container position-relative d-flex flex-column justify-content-center" style={{ zIndex: 1, paddingTop: '110px', paddingBottom: '60px' }}>
-          {/* Greeting Badge */}
-          <div className="mb-3">
-            <span style={{
-              fontSize: '11px', letterSpacing: '2.5px', textTransform: 'uppercase',
-              color: '#FFD700', fontWeight: 600,
-            }}>
-              <i className="fas fa-hand-sparkles me-2" />
-              Selamat datang kembali, {firstName}
-            </span>
-          </div>
+        <div className="container position-relative" style={{ zIndex: 1, paddingTop: '100px', paddingBottom: '60px' }}>
+          <div className="row align-items-center g-5">
+            <div className="col-lg-7">
+              <span style={{
+                fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase',
+                color: '#FFD700', fontWeight: 700, display: 'inline-block', marginBottom: '20px',
+                borderBottom: '2px solid rgba(255,215,0,0.3)', paddingBottom: '6px',
+              }}>
+                <i className="fas fa-bolt me-1" /> SELAMAT DATANG, {firstName.toUpperCase()}
+              </span>
 
-          {/* Main Headline */}
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 'clamp(2.4rem, 5vw, 4rem)',
-            fontWeight: 700, lineHeight: 1.08,
-            margin: 0, letterSpacing: '-1.5px',
-            maxWidth: '700px',
-          }}>
-            Temukan Acara<br />
-            <span style={{ color: '#FFD700', fontStyle: 'italic' }}>Terbaik</span> di Sekitar Anda
-          </h1>
+              <h1 style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
+                fontWeight: 700, lineHeight: 1.08, margin: '0 0 20px',
+                letterSpacing: '-1.5px',
+              }}>
+                Temukan Konser &<br />
+                <span style={{ color: '#FFD700', fontStyle: 'italic' }}>Pengalaman Terbaik</span>
+              </h1>
 
-          {/* Subtitle */}
-          <p style={{
-            color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
-            margin: '20px 0 28px', maxWidth: '540px', lineHeight: 1.7,
-          }}>
-            Jelajahi konser eksklusif, festival seni internasional, dan konferensi teknologi terdepan. Semua tiket dilindungi proteksi anti-calo dan pembayaran instan.
-          </p>
+              <p style={{
+                color: 'rgba(255,255,255,0.5)', fontSize: '1rem',
+                lineHeight: 1.7, maxWidth: '480px', margin: '0 0 32px',
+              }}>
+                Platform tiket digital terdepan dengan proteksi anti-calo Token Bucket,
+                validasi gerbang real-time WebSocket STOMP, dan pembayaran instan Midtrans Snap.
+              </p>
 
-          {/* CTA Buttons */}
-          <div className="d-flex flex-wrap gap-3">
-            <Link to="/events" className="btn-kikk py-3 px-5" style={{ borderRadius: '16px', fontSize: '14px' }}>
-              <i className="fas fa-compass me-2" /> Jelajahi Katalog Acara
-            </Link>
-            <Link to="/my-tickets" className="btn-kikk-outline py-3 px-5" style={{ borderRadius: '16px', fontSize: '14px' }}>
-              <i className="fas fa-ticket-alt me-2" style={{ color: '#FFD700' }} /> Tiket Saya ({stats.total})
-            </Link>
+              <div className="d-flex flex-wrap gap-3">
+                <Link to="/events" className="btn-kikk py-2 px-5" style={{ borderRadius: '14px', fontSize: '14px' }}>
+                  <i className="fas fa-compass me-2" /> Jelajahi Acara
+                </Link>
+                <Link to="/my-tickets" className="btn-kikk-outline py-2 px-4" style={{ borderRadius: '14px', fontSize: '14px' }}>
+                  <i className="fas fa-ticket-alt me-2" /> Tiket Saya ({stats.total})
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: 3 compact info cards */}
+            <div className="col-lg-5">
+              <div className="d-flex flex-column gap-3">
+                {[
+                  { icon: 'fa-shield-alt', color: '#c084fc', title: 'Anti-Scalper Protection', desc: 'Token Bucket Redis membatasi pembelian massal oleh bot secara otomatis' },
+                  { icon: 'fa-bolt', color: '#60a5fa', title: 'Realtime Gate Scan', desc: 'Verifikasi QR tiket di gerbang dalam hitungan milidetik via STOMP' },
+                  { icon: 'fa-credit-card', color: '#4ade80', title: 'Pembayaran Instan', desc: 'QRIS, Virtual Account, dan kartu kredit dengan webhook callback aman' },
+                ].map((item, i) => (
+                  <div key={i} className="d-flex align-items-start gap-3" style={{
+                    padding: '16px 20px', borderRadius: '18px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    backdropFilter: 'blur(8px)',
+                    transition: 'all 0.3s ease',
+                  }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                      background: `${item.color}14`, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <i className={`fas ${item.icon}`} style={{ color: item.color, fontSize: '16px' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>{item.title}</div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -173,10 +193,7 @@ export const UserDashboardPage: React.FC = () => {
                   }}>
                     <i className="fas fa-star me-1" /> RESERVASI UTAMA
                   </span>
-                  <Link to="/my-tickets" style={{
-                    fontSize: '12px', color: 'rgba(255,255,255,0.5)',
-                    textDecoration: 'none', transition: 'color 0.3s',
-                  }} className="hover-gold">
+                  <Link to="/my-tickets" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }} className="hover-gold">
                     Semua Tiket ({stats.total}) <i className="fas fa-arrow-right ms-1" />
                   </Link>
                 </div>
@@ -299,15 +316,12 @@ export const UserDashboardPage: React.FC = () => {
                   Detail <i className="fas fa-chevron-right ms-1" style={{ fontSize: '9px' }} />
                 </Link>
               </div>
-
               <div className="d-flex justify-content-between align-items-end">
                 <div>
                   <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.8rem', fontWeight: 700, lineHeight: 1, color: '#fff' }}>
                     {stats.total}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>
-                    Total tiket terdaftar
-                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>Total tiket terdaftar</div>
                 </div>
                 <div className="d-flex gap-3">
                   <div className="text-center">
@@ -326,7 +340,6 @@ export const UserDashboardPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Floating Island Navigation Dock */}
       <UserFloatingDock />
     </div>
   );

@@ -76,17 +76,28 @@ export const Navbar: React.FC = () => {
               </Link>
             </li>
 
-            {/* Khusus User: Link Cepat ke Tiket Saya */}
+            {/* Khusus User: Link Cepat ke Dashboard & Tiket Saya */}
             {isAuthenticated && user?.role === 'USER' && (
-              <li className="nav-item">
-                <Link
-                  className={`nav-link px-3 ${isActive('/my-tickets') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
-                  to="/my-tickets"
-                  style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
-                >
-                  <i className="fas fa-ticket-alt me-1 text-warning"></i> Tiket Saya
-                </Link>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link px-3 ${isActive('/home-user') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
+                    to="/home-user"
+                    style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
+                  >
+                    <i className="fas fa-chart-pie me-1 text-warning"></i> Dashboard
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link px-3 ${isActive('/my-tickets') ? 'text-warning fw-semibold' : 'text-white text-opacity-75'}`}
+                    to="/my-tickets"
+                    style={{ fontSize: '0.92rem', transition: 'all 0.2s ease' }}
+                  >
+                    <i className="fas fa-ticket-alt me-1 text-warning"></i> Tiket Saya
+                  </Link>
+                </li>
+              </>
             )}
 
             {!isAuthenticated ? (
@@ -114,7 +125,7 @@ export const Navbar: React.FC = () => {
               <>
                 <li className="nav-item ms-lg-3">
                   <Link
-                    to={getDashboardPath()}
+                    to={user?.role === 'USER' ? '/profile' : getDashboardPath()}
                     className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
                     style={{
                       background: 'rgba(255, 215, 0, 0.08)',
@@ -123,6 +134,7 @@ export const Navbar: React.FC = () => {
                       color: '#ffffff',
                       transition: 'all 0.3s ease',
                     }}
+                    title={user?.role === 'USER' ? 'Buka Profil Pengguna' : 'Buka Dashboard'}
                   >
                     {user?.profilePicture ? (
                       <img

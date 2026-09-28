@@ -16,6 +16,7 @@ import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { GateScannerPage } from './pages/GateScannerPage';
 import { OrganizerWalletPage } from './pages/OrganizerWalletPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -46,6 +47,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['USER', 'ADMIN']}>
                 <MyTicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={['USER', 'ADMIN']}>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />
