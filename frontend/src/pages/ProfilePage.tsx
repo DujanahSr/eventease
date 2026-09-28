@@ -72,6 +72,31 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleOrganizerInquiry = () => {
+    Swal.fire({
+      title: 'Program Kemitraan Penyelenggara',
+      html: `
+        <div style="text-align:left;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6">
+          <p>EventEase menerapkan sistem <strong>Curated &amp; Enterprise (Model B)</strong> untuk menjaga integritas seluruh acara dan perlindungan mutlak bagi pembeli tiket.</p>
+          <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+            <div style="font-weight:600;color:#FFD700;margin-bottom:4px"><i class="fas fa-shield-alt me-1"></i> Syarat Verifikasi Penyelenggara:</div>
+            <ul style="margin:0;padding-left:18px;color:rgba(255,255,255,0.75)">
+              <li>KTP Penanggung Jawab / Legalitas Badan Usaha / Komunitas</li>
+              <li>Rekening Bank Resmi atas nama Penyelenggara</li>
+              <li>Persetujuan Super Admin melalui Panel Manajemen</li>
+            </ul>
+          </div>
+          <p style="margin-bottom:0">Untuk mengajukan akun Organizer atau upgrade akun ini, silakan hubungi tim Administrator melalui WhatsApp atau email resmi: <strong>support@eventease.com</strong>.</p>
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'Saya Mengerti',
+      confirmButtonColor: '#FFD700',
+      background: '#120a20',
+      color: '#fff',
+    });
+  };
+
   return (
     <div className="position-relative min-vh-100" style={{ backgroundColor: '#0a0514', color: '#fff' }}>
       <input type="file" ref={fileInputRef} onChange={handleAvatarChange} accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} />
@@ -215,6 +240,44 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Curated Tier: Organizer Partnership Information */}
+              {user?.role === 'USER' && (
+                <div
+                  className="mt-4 p-3 rounded-4"
+                  style={{
+                    background: 'rgba(255, 215, 0, 0.03)',
+                    border: '1px dashed rgba(255, 215, 0, 0.25)',
+                  }}
+                >
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div className="d-flex align-items-center gap-3">
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center text-warning"
+                        style={{ width: '40px', height: '40px', background: 'rgba(255, 215, 0, 0.1)', flexShrink: 0 }}
+                      >
+                        <i className="fas fa-bullhorn" style={{ fontSize: '15px' }}></i>
+                      </div>
+                      <div>
+                        <div className="fw-bold text-white" style={{ fontSize: '13px' }}>
+                          Ingin Menjadi Penyelenggara Acara?
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.55)' }}>
+                          EventEase menerapkan sistem kurasi terverifikasi oleh Super Admin untuk keamanan platform.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOrganizerInquiry}
+                      className="btn-kikk-outline btn-sm py-1 px-3"
+                      style={{ fontSize: '11px', borderRadius: '10px' }}
+                    >
+                      <i className="fas fa-info-circle me-1"></i> Info Kemitraan
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Quick Navigation */}
               <div className="d-flex flex-wrap gap-2 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>

@@ -12,6 +12,7 @@ import com.eventease.constant.RoleConstants;
 import com.eventease.dto.LoginRequest;
 import com.eventease.dto.RegisterRequest;
 import com.eventease.model.Akun;
+import com.eventease.model.Role;
 import com.eventease.repository.RoleRepositoy;
 import com.eventease.repository.AkunRepository;
 
@@ -142,11 +143,18 @@ public class AkunServiceImpl implements AkunService {
         Akun user = userRepository.findById(id).orElseThrow(() -> new Exception("User tidak ditemukan"));
         
         // Prevent changing ADMIN
-        if (user.getRole().getRoleName().equals(RoleConstants.ROLE_ADMIN)) {
-            throw new Exception("Tidak dapat mengubah role ADMIN.");
+        if (user.getRole() != null && RoleConstants.ROLE_ADMIN.equalsIgnoreCase(user.getRole().getRoleName())) {
+            throw new Exception("Tidak dapat mengubah role akun ADMIN.");
         }
         
-        user.setRole(roleRepositoy.findRoleByRoleName(targetRole));
+        String normalizedRole = targetRole.trim().toUpperCase();
+        Role role = roleRepositoy.findRoleByRoleName(normalizedRole);
+        if (role == null) {
+            role = new Role();
+            role.setRoleName(normalizedRole);
+            role = roleRepositoy.save(role);
+        }
+        user.setRole(role);
         userRepository.save(user);
     }
 

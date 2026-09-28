@@ -8,7 +8,6 @@ export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('USER');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -96,7 +95,7 @@ export const RegisterPage: React.FC = () => {
         phone: phone.trim(),
         password,
         confirmPassword,
-        role,
+        role: 'USER',
       });
 
       Swal.fire({
@@ -194,6 +193,47 @@ export const RegisterPage: React.FC = () => {
         }}
       ></div>
 
+      {/* Sleek Top-Left Back Navigation */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '24px',
+          left: '24px',
+          zIndex: 10,
+        }}
+      >
+        <Link
+          to="/"
+          className="d-inline-flex align-items-center gap-2 text-decoration-none px-3 py-2 rounded-pill"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontSize: '0.84rem',
+            fontWeight: 500,
+            transition: 'all 0.25s ease',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 215, 0, 0.12)';
+            e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+            e.currentTarget.style.color = '#FFD700';
+            e.currentTarget.style.transform = 'translateX(-3px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.transform = 'none';
+          }}
+        >
+          <i className="fas fa-arrow-left" style={{ fontSize: '0.75rem' }}></i>
+          <span>Kembali ke Beranda</span>
+        </Link>
+      </div>
+
       <div
         className="auth-container anim-fade-in"
         style={{
@@ -203,17 +243,6 @@ export const RegisterPage: React.FC = () => {
           maxWidth: '540px',
         }}
       >
-        {/* Explicit Back to Home Navigation */}
-        <div className="mb-3">
-          <Link
-            to="/"
-            className="btn-kikk-outline btn-sm d-inline-flex align-items-center gap-2 py-2 px-3"
-            style={{ borderRadius: '10px', fontSize: '13px', textDecoration: 'none' }}
-          >
-            <i className="fas fa-arrow-left"></i> Kembali ke Beranda
-          </Link>
-        </div>
-
         <div
           className="luxury-glass-card pattern-wireframe-card"
           style={{
@@ -221,13 +250,15 @@ export const RegisterPage: React.FC = () => {
             border: '1px solid rgba(255, 215, 0, 0.25)',
           }}
         >
-          {/* Header Brand - Non-navigational brand identity */}
+          {/* Header Brand - Interactive logo to home */}
           <div className="auth-header text-center mb-4">
-            <div className="d-inline-flex justify-content-center mb-2">
-              <EventEaseLogo size="lg" />
-            </div>
+            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }} title="EventEase - Kembali ke Beranda">
+              <div className="d-inline-flex justify-content-center mb-2">
+                <EventEaseLogo size="lg" />
+              </div>
+            </Link>
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '8px 0 0 0' }}>
-              Daftarkan akun baru untuk pengalaman tiket kelas dunia
+              Daftarkan akun baru untuk kemudahan memesan tiket &amp; menikmati acara
             </p>
           </div>
 
@@ -325,49 +356,7 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 4. Pilihan Role (Visual Cards) */}
-            <div className="mb-3">
-              <label className="kikk-form-label mb-2">
-                <i className="fas fa-users-cog me-1"></i> Daftar Sebagai
-              </label>
-              <div className="row g-2">
-                <div className="col-6">
-                  <div
-                    onClick={() => setRole('USER')}
-                    className="p-3 rounded-3 text-center cursor-pointer"
-                    style={{
-                      cursor: 'pointer',
-                      background: role === 'USER' ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                      border: role === 'USER' ? '1.5px solid var(--kikk-yellow)' : '1px solid rgba(255, 255, 255, 0.1)',
-                      transition: 'all 0.25s ease',
-                    }}
-                  >
-                    <i className={`fas fa-ticket-alt fs-5 mb-1 ${role === 'USER' ? 'text-warning' : 'text-secondary'}`}></i>
-                    <div className={`fw-bold small ${role === 'USER' ? 'text-white' : 'text-secondary'}`}>Pembeli Tiket</div>
-                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>Role: USER</div>
-                  </div>
-                </div>
-
-                <div className="col-6">
-                  <div
-                    onClick={() => setRole('ORGANIZER')}
-                    className="p-3 rounded-3 text-center cursor-pointer"
-                    style={{
-                      cursor: 'pointer',
-                      background: role === 'ORGANIZER' ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                      border: role === 'ORGANIZER' ? '1.5px solid var(--kikk-yellow)' : '1px solid rgba(255, 255, 255, 0.1)',
-                      transition: 'all 0.25s ease',
-                    }}
-                  >
-                    <i className={`fas fa-bullhorn fs-5 mb-1 ${role === 'ORGANIZER' ? 'text-warning' : 'text-secondary'}`}></i>
-                    <div className={`fw-bold small ${role === 'ORGANIZER' ? 'text-white' : 'text-secondary'}`}>Penyelenggara</div>
-                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>Role: ORGANIZER</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 5. Kata Sandi */}
+            {/* 4. Kata Sandi */}
             <div className="mb-3">
               <label className="kikk-form-label mb-1">
                 <i className="fas fa-lock me-1"></i> Kata Sandi *
@@ -401,7 +390,7 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 6. Konfirmasi Kata Sandi */}
+            {/* 5. Konfirmasi Kata Sandi */}
             <div className="mb-4">
               <label className="kikk-form-label mb-1">
                 <i className="fas fa-check-double me-1"></i> Konfirmasi Kata Sandi *
@@ -455,12 +444,26 @@ export const RegisterPage: React.FC = () => {
           </form>
 
           <div className="text-center mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', marginBottom: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', marginBottom: '14px' }}>
               Sudah memiliki akun?{' '}
               <Link to="/login" style={{ color: 'var(--kikk-yellow)', fontWeight: 600, textDecoration: 'none' }}>
                 Masuk di Sini <i className="fas fa-arrow-right small ms-1"></i>
               </Link>
             </p>
+
+            <div
+              className="p-2 px-3 rounded-3 text-center"
+              style={{
+                background: 'rgba(255, 215, 0, 0.04)',
+                border: '1px dashed rgba(255, 215, 0, 0.2)',
+                fontSize: '11px',
+                color: 'rgba(255, 255, 255, 0.65)',
+                lineHeight: 1.5,
+              }}
+            >
+              <i className="fas fa-shield-alt text-warning me-1"></i>
+              Ingin menjadi Penyelenggara Acara? Akun Penyelenggara dikurasi secara resmi oleh tim Administrator.
+            </div>
           </div>
         </div>
       </div>

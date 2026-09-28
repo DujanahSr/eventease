@@ -81,14 +81,13 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email sudah terdaftar. Silakan gunakan email lain atau lakukan login.");
         }
 
-        String requestedRoleName = (registerDto.getRole() != null && registerDto.getRole().equalsIgnoreCase("ORGANIZER"))
-                ? RoleConstants.ROLE_ORGANIZER
-                : RoleConstants.ROLE_USER;
-
-        Role targetRole = roleRepository.findRoleByRoleName(requestedRoleName);
+        // Model B (Curated / Enterprise Role Management):
+        // Seluruh pendaftaran publik (form maupun Google OAuth) wajib menghasilkan akun role USER.
+        // Role ORGANIZER hanya dapat diaktifkan secara terkurasi oleh Super Admin melalui panel manajemen pengguna.
+        Role targetRole = roleRepository.findRoleByRoleName(RoleConstants.ROLE_USER);
         if (targetRole == null) {
             targetRole = new Role();
-            targetRole.setRoleName(requestedRoleName);
+            targetRole.setRoleName(RoleConstants.ROLE_USER);
             targetRole = roleRepository.save(targetRole);
         }
 

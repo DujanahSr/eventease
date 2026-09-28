@@ -20,9 +20,9 @@ public class EventeaseApplication {
 			try {
 				// Paksa ubah tipe data status menjadi VARCHAR agar CHECKED_IN bisa disimpan
 				jdbcTemplate.execute("ALTER TABLE booking MODIFY status VARCHAR(50)");
-				System.out.println("✅ Database schema fixed for booking status.");
+				System.out.println("[INFO] Database schema fixed for booking status.");
 			} catch (Exception e) {
-				System.out.println("⚠️ Database schema fix skipped (maybe already correct).");
+				System.out.println("[WARN] Database schema fix skipped (maybe already correct).");
 			}
 		};
 	}

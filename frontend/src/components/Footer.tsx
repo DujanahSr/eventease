@@ -52,7 +52,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/register" className="text-secondary text-decoration-none hover-gold transition-all">
-                  <i className="fas fa-chevron-right text-warning me-2" style={{ fontSize: '10px' }}></i> Daftar Penyelenggara
+                  <i className="fas fa-chevron-right text-warning me-2" style={{ fontSize: '10px' }}></i> Daftar Akun Baru
                 </Link>
               </li>
             </ul>

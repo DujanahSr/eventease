@@ -143,6 +143,47 @@ export const LoginPage: React.FC = () => {
         }}
       ></div>
 
+      {/* Sleek Top-Left Back Navigation */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '24px',
+          left: '24px',
+          zIndex: 10,
+        }}
+      >
+        <Link
+          to="/"
+          className="d-inline-flex align-items-center gap-2 text-decoration-none px-3 py-2 rounded-pill"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontSize: '0.84rem',
+            fontWeight: 500,
+            transition: 'all 0.25s ease',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 215, 0, 0.12)';
+            e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+            e.currentTarget.style.color = '#FFD700';
+            e.currentTarget.style.transform = 'translateX(-3px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.transform = 'none';
+          }}
+        >
+          <i className="fas fa-arrow-left" style={{ fontSize: '0.75rem' }}></i>
+          <span>Kembali ke Beranda</span>
+        </Link>
+      </div>
+
       <div
         className="auth-container anim-fade-in"
         style={{
@@ -152,17 +193,6 @@ export const LoginPage: React.FC = () => {
           maxWidth: '460px',
         }}
       >
-        {/* Explicit Back to Home Navigation */}
-        <div className="mb-3">
-          <Link
-            to="/"
-            className="btn-kikk-outline btn-sm d-inline-flex align-items-center gap-2 py-2 px-3"
-            style={{ borderRadius: '10px', fontSize: '13px', textDecoration: 'none' }}
-          >
-            <i className="fas fa-arrow-left"></i> Kembali ke Beranda
-          </Link>
-        </div>
-
         <div
           className="luxury-glass-card pattern-wireframe-card"
           style={{
@@ -170,11 +200,13 @@ export const LoginPage: React.FC = () => {
             border: '1px solid rgba(255, 215, 0, 0.25)',
           }}
         >
-          {/* Header Brand - Non-navigational brand identity */}
+          {/* Header Brand - Interactive logo to home */}
           <div className="auth-header text-center mb-4">
-            <div className="d-inline-flex justify-content-center mb-2">
-              <EventEaseLogo size="lg" />
-            </div>
+            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }} title="EventEase - Kembali ke Beranda">
+              <div className="d-inline-flex justify-content-center mb-2">
+                <EventEaseLogo size="lg" />
+              </div>
+            </Link>
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '8px 0 0 0' }}>
               Masuk untuk mengakses tiket &amp; dasbor Anda
             </p>

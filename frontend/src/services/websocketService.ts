@@ -44,7 +44,7 @@ class WebSocketService {
 
     this.client.onConnect = () => {
       this.isConnected = true;
-      console.log('✅ WebSocket STOMP Terhubung ke Server Eventease');
+      console.log('[STOMP] WebSocket terhubung ke server EventEase');
 
       // 1. Subscribe ke channel check-in umum
       this.client?.subscribe('/topic/check-in', (message: IMessage) => {
@@ -60,12 +60,12 @@ class WebSocketService {
     };
 
     this.client.onStompError = (frame) => {
-      console.error('❌ STOMP error:', frame.headers['message'], frame.body);
+      console.error('[STOMP] Error:', frame.headers['message'], frame.body);
     };
 
     this.client.onWebSocketClose = () => {
       this.isConnected = false;
-      console.warn('⚠️ Koneksi WebSocket terputus, mencoba rekoneksi otomatis...');
+      console.warn('[STOMP] Koneksi WebSocket terputus, mencoba rekoneksi otomatis...');
     };
 
     this.client.activate();
@@ -81,7 +81,7 @@ class WebSocketService {
   private handleIncomingCheckIn(message: IMessage) {
     try {
       const payload: CheckInNotification = JSON.parse(message.body);
-      console.log('🔔 [Check-In Realtime Diterima]:', payload);
+      console.log('[STOMP] Check-In diterima:', payload);
 
       // Tampilkan toast SweetAlert2 yang elegan dan profesional
       this.displayCheckInToast(payload);
