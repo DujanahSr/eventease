@@ -28,10 +28,19 @@ export const LoginPage: React.FC = () => {
         (window as any).google.accounts.id.initialize({
           client_id: '146370175848-nv395oku7lv35171e8t26011sajhamvp.apps.googleusercontent.com',
           callback: handleGoogleResponse,
+          auto_select: false,
         });
         (window as any).google.accounts.id.renderButton(
           document.getElementById('googleSignInBtn'),
-          { theme: 'filled_black', size: 'large', width: '100%', text: 'continue_with', shape: 'pill' }
+          {
+            type: 'standard',
+            theme: 'filled_black',
+            size: 'large',
+            width: '100%',
+            text: 'signin_with',
+            shape: 'pill',
+            logo_alignment: 'left',
+          }
         );
       }
     };
