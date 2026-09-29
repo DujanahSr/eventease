@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -66,7 +68,7 @@ api.interceptors.response.use(
 
         try {
           // Panggil refresh endpoint menggunakan instance axios murni
-          const res = await axios.post('/api/auth/refresh', { refreshToken });
+          const res = await axios.post(`${baseURL}/auth/refresh`, { refreshToken });
           const newAccessToken = res.data.data.accessToken;
           const newRefreshToken = res.data.data.refreshToken;
 

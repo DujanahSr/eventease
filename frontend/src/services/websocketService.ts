@@ -27,7 +27,7 @@ class WebSocketService {
       return;
     }
 
-    const socketUrl = '/ws';
+    const socketUrl = import.meta.env.VITE_WS_URL || '/ws';
 
     this.client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
@@ -36,7 +36,7 @@ class WebSocketService {
       heartbeatOutgoing: 4000,
       debug: (str) => {
         // Hanya log saat dev
-        if ((import.meta as any).env?.DEV) {
+        if (import.meta.env.DEV) {
           console.debug('[STOMP WebSocket]:', str);
         }
       },
@@ -44,7 +44,9 @@ class WebSocketService {
 
     this.client.onConnect = () => {
       this.isConnected = true;
-      console.log('[STOMP] WebSocket terhubung ke server EventEase');
+      if (import.meta.env.DEV) {
+        console.log('[STOMP] WebSocket terhubung ke server EventEase');
+      }
 
       // 1. Subscribe ke channel check-in umum
       this.client?.subscribe('/topic/check-in', (message: IMessage) => {
@@ -81,7 +83,9 @@ class WebSocketService {
   private handleIncomingCheckIn(message: IMessage) {
     try {
       const payload: CheckInNotification = JSON.parse(message.body);
-      console.log('[STOMP] Check-In diterima:', payload);
+      if (import.meta.env.DEV) {
+        console.log('[STOMP] Check-In diterima:', payload);
+      }
 
       // Tampilkan toast SweetAlert2 yang elegan dan profesional
       this.displayCheckInToast(payload);
@@ -131,7 +135,9 @@ class WebSocketService {
       this.client.deactivate();
       this.isConnected = false;
       this.client = null;
-      console.log('Koneksi WebSocket ditutup.');
+      if (import.meta.env.DEV) {
+        console.log('Koneksi WebSocket ditutup.');
+      }
     }
   }
 }
