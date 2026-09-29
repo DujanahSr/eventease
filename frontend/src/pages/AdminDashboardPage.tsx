@@ -811,7 +811,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <i className="fas fa-users-gear text-info me-2"></i> Manajemen Akun Pengguna & Hak Akses Role
                 </h3>
                 <p className="text-secondary small m-0 mt-1">
-                  Kendalikan izin peran pengguna (USER &harr; ORGANIZER) atau nonaktifkan akun yang melanggar.
+                  Daftar seluruh akun terdaftar. Promosi menjadi Penyelenggara dikurasi secara resmi melalui berkas di tab <strong>Verifikasi Mitra (KYC)</strong>.
                 </p>
               </div>
             </div>
@@ -867,22 +867,22 @@ export const AdminDashboardPage: React.FC = () => {
                           <div className="d-flex justify-content-end gap-2">
                             {u.role === 'USER' && (
                               <button
-                                onClick={() => handleUpdateRole(u, 'ORGANIZER')}
-                                className="btn btn-sm btn-outline-warning py-1 px-2"
+                                onClick={() => setActiveTab('partners')}
+                                className="btn btn-sm btn-outline-secondary py-1 px-2 text-secondary"
                                 style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Promosikan menjadi Penyelenggara Acara"
+                                title="Promosi peran hanya melalui verifikasi berkas KYC resmi di tab Verifikasi Mitra"
                               >
-                                <i className="fas fa-arrow-up me-1"></i> Jadi Organizer
+                                <i className="fas fa-id-card me-1 text-warning"></i> Cek KYC
                               </button>
                             )}
                             {u.role === 'ORGANIZER' && (
                               <button
                                 onClick={() => handleUpdateRole(u, 'USER')}
-                                className="btn btn-sm btn-outline-secondary py-1 px-2"
+                                className="btn btn-sm btn-outline-warning py-1 px-2"
                                 style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Ubah menjadi Pembeli Tiket Biasa"
+                                title="Cabut hak akses organizer (kembalikan ke akun User biasa)"
                               >
-                                <i className="fas fa-arrow-down me-1"></i> Jadi User
+                                <i className="fas fa-user-slash me-1"></i> Cabut Organizer
                               </button>
                             )}
                             {u.role !== 'ADMIN' && (
