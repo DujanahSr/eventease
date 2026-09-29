@@ -538,23 +538,17 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="d-flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowAddCatModal(true)}
-              className="btn-kikk btn-sm px-3 py-2"
-              style={{ borderRadius: '10px', fontSize: '13px' }}
+          {/* Subtle System Status Pill */}
+          <div className="d-flex align-items-center gap-2">
+            <div
+              className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+              style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
             >
-              <i className="fas fa-plus me-1"></i> Tambah Kategori Resmi
-            </button>
-            <button
-              onClick={() => handleExportExcel()}
-              disabled={isExporting}
-              className="btn-kikk-outline px-3 py-2"
-              style={{ fontSize: '13px', borderRadius: '10px', borderColor: '#22c55e', color: '#22c55e' }}
-            >
-              <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'} me-1`}></i>
-              Laporan Konsolidasi (.xlsx)
-            </button>
+              <span className="rounded-circle bg-success" style={{ width: '8px', height: '8px', boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)' }}></span>
+              <span className="text-secondary small fw-medium" style={{ fontSize: '11px' }}>
+                Konsol Super Admin &bull; {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -643,6 +637,20 @@ export const AdminDashboardPage: React.FC = () => {
                 <p className="text-secondary small m-0 mt-1">
                   Pantau status pelunasan Midtrans Snap, lakukan sinkronisasi verifikasi instan, atau konfirmasi manual jika diperlukan.
                 </p>
+              </div>
+
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleExportExcel()}
+                  disabled={isExporting}
+                  className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2 py-1 px-3"
+                  style={{ fontSize: '11px', borderRadius: '8px', borderColor: 'rgba(34, 197, 94, 0.4)', color: '#4ade80', background: 'rgba(34, 197, 94, 0.06)' }}
+                  title="Ekspor seluruh rekap transaksi platform format .xlsx"
+                >
+                  <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                  <span>Ekspor Konsolidasi (.xlsx)</span>
+                </button>
               </div>
 
               {/* Status Filter Tabs */}

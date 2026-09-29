@@ -401,41 +401,17 @@ export const OrganizerDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Action Toolbar */}
-          <div className="d-flex align-items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm"
-              style={{
-                fontSize: '13px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #FFD700 0%, #E6C200 100%)',
-                border: 'none',
-                letterSpacing: '0.3px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-              }}
+          {/* Subtle Portal Status Pill */}
+          <div className="d-flex align-items-center gap-2">
+            <div
+              className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+              style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
             >
-              <i className="fas fa-plus-circle"></i>
-              <span>Buat Acara Baru</span>
-            </button>
-            <button
-              onClick={() => handleExportExcel()}
-              disabled={isExporting}
-              className="btn d-inline-flex align-items-center gap-2 px-3 py-2 text-white"
-              style={{
-                fontSize: '13px',
-                borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-              }}
-              title="Ekspor rekap seluruh penjualan tiket format .xlsx"
-            >
-              <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'} text-success`}></i>
-              <span>Ekspor Excel (.xlsx)</span>
-            </button>
+              <span className="rounded-circle bg-success" style={{ width: '8px', height: '8px', boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)' }}></span>
+              <span className="text-secondary small fw-medium" style={{ fontSize: '11px' }}>
+                Konsol Aktif &bull; {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -609,16 +585,35 @@ export const OrganizerDashboardPage: React.FC = () => {
               </div>
 
               <button
+                onClick={() => handleExportExcel()}
+                disabled={isExporting}
+                className="btn btn-sm btn-outline-success py-2 px-3 d-inline-flex align-items-center gap-1"
+                style={{
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  borderColor: 'rgba(34, 197, 94, 0.4)',
+                  color: '#4ade80',
+                  background: 'rgba(34, 197, 94, 0.08)',
+                }}
+                title="Ekspor rekap seluruh penjualan tiket format .xlsx"
+              >
+                <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                <span>Ekspor Excel (.xlsx)</span>
+              </button>
+
+              <button
                 onClick={() => setShowCreateModal(true)}
-                className="btn btn-warning text-dark fw-bold btn-sm py-2 px-3"
+                className="btn btn-warning text-dark fw-bold btn-sm py-2 px-3 d-inline-flex align-items-center gap-1"
                 style={{
                   borderRadius: '10px',
                   fontSize: '12px',
                   background: 'linear-gradient(135deg, #FFD700 0%, #E6C200 100%)',
                   border: 'none',
+                  boxShadow: '0 4px 12px rgba(255, 215, 0, 0.25)',
                 }}
               >
-                <i className="fas fa-plus me-1"></i> Buat Acara
+                <i className="fas fa-plus"></i>
+                <span>Buat Acara Baru</span>
               </button>
             </div>
           </div>
