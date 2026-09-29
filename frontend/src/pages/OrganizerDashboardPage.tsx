@@ -284,7 +284,7 @@ export const OrganizerDashboardPage: React.FC = () => {
               <i className="fas fa-broadcast-tower"></i>
               <span>Gate Live</span>
               {isWsConnected && (
-                <span style={{ marginLeft: 'auto', width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.8)', flexShrink: 0 }}></span>
+                <span style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '2px', background: '#4ade80', flexShrink: 0 }}></span>
               )}
             </a>
 
@@ -426,7 +426,7 @@ export const OrganizerDashboardPage: React.FC = () => {
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.9)' }}></span>
+              <span style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'linear-gradient(to bottom, #4ade80, #22c55e)', flexShrink: 0 }}></span>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 500 }}>
                 {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
@@ -510,7 +510,7 @@ export const OrganizerDashboardPage: React.FC = () => {
           >
             <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Gateway Gate</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isWsConnected ? '#22c55e' : 'rgba(255,255,255,0.2)', boxShadow: isWsConnected ? '0 0 12px rgba(34,197,94,0.9)' : 'none', flexShrink: 0 }}></span>
+              <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: isWsConnected ? '#22c55e' : 'rgba(255,255,255,0.2)', flexShrink: 0 }}></span>
               <span style={{ fontSize: '1.1rem', fontWeight: 700, color: isWsConnected ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
                 {isWsConnected ? 'LIVE AKTIF' : 'Menghubungkan...'}
               </span>

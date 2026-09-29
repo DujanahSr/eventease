@@ -9,6 +9,15 @@ import { EventSummary, Category, User } from '../types';
 import { EventEaseLogo } from '../components/EventEaseLogo';
 import Swal from 'sweetalert2';
 
+// ── Shared inline helpers ──────────────────────────────────────────────────────
+const th = (label: string, align: 'left' | 'right' | 'center' = 'left') => ({
+  padding: '10px 14px', textAlign: align as any,
+  color: 'rgba(255,215,0,0.65)', fontSize: '10px', fontWeight: 700,
+  letterSpacing: '1.2px', textTransform: 'uppercase' as any, whiteSpace: 'nowrap' as any,
+  borderBottom: '1px solid rgba(255,215,0,0.15)',
+});
+const tdBase = { padding: '13px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' };
+
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -21,26 +30,24 @@ export const AdminDashboardPage: React.FC = () => {
   const [bookings, setBookings] = useState<BookingResponseData[]>([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
 
-  // KYC Partner Applications State
   const [partnerApplications, setPartnerApplications] = useState<PartnerApplication[]>([]);
   const [pendingPartnerCount, setPendingPartnerCount] = useState(0);
   const [partnerStatusFilter, setPartnerStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
 
-  const filteredPartners = useMemo(() => {
-    if (partnerStatusFilter === 'ALL') return partnerApplications;
-    return partnerApplications.filter((p) => p.status === partnerStatusFilter);
-  }, [partnerApplications, partnerStatusFilter]);
+  const filteredPartners = useMemo(() =>
+    partnerStatusFilter === 'ALL' ? partnerApplications : partnerApplications.filter((p) => p.status === partnerStatusFilter),
+    [partnerApplications, partnerStatusFilter]
+  );
 
-  const filteredBookings = useMemo(() => {
-    if (bookingStatusFilter === 'ALL') return bookings;
-    return bookings.filter((b) => b.status === bookingStatusFilter);
-  }, [bookings, bookingStatusFilter]);
+  const filteredBookings = useMemo(() =>
+    bookingStatusFilter === 'ALL' ? bookings : bookings.filter((b) => b.status === bookingStatusFilter),
+    [bookings, bookingStatusFilter]
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Modal Tambah Kategori
   const [showAddCatModal, setShowAddCatModal] = useState(false);
   const [catName, setCatName] = useState('');
   const [catDesc, setCatDesc] = useState('');
@@ -74,184 +81,79 @@ export const AdminDashboardPage: React.FC = () => {
   const handleApprovePartner = async (app: PartnerApplication) => {
     const confirm = await Swal.fire({
       title: 'Setujui Kemitraan?',
-      html: `
-        <div style="text-align:left;font-size:13px;line-height:1.6">
-          <p>Anda akan menyetujui pengajuan kemitraan dari:</p>
-          <div style="padding:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-bottom:10px">
-            <div><strong>Organisasi:</strong> ${app.organizationName}</div>
-            <div><strong>Pemohon:</strong> ${app.userName} (${app.userEmail})</div>
-            <div><strong>No. Rekening:</strong> ${app.bankName} - ${app.bankAccountNumber}</div>
-          </div>
-          <p class="mb-0 text-warning">Peran pengguna akan otomatis diubah menjadi <strong>ORGANIZER</strong>.</p>
+      html: `<div style="text-align:left;font-size:13px;line-height:1.6">
+        <p>Anda akan menyetujui pengajuan kemitraan dari:</p>
+        <div style="padding:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-bottom:10px">
+          <div><strong>Organisasi:</strong> ${app.organizationName}</div>
+          <div><strong>Pemohon:</strong> ${app.userName} (${app.userEmail})</div>
+          <div><strong>No. Rekening:</strong> ${app.bankName} - ${app.bankAccountNumber}</div>
         </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
+        <p class="mb-0 text-warning">Peran pengguna akan otomatis diubah menjadi <strong>ORGANIZER</strong>.</p>
+      </div>`,
+      icon: 'question', showCancelButton: true,
       confirmButtonText: '<i class="fas fa-check-circle me-1"></i> Ya, Setujui Kemitraan',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#22c55e',
-      background: '#120a20',
-      color: '#fff',
+      cancelButtonText: 'Batal', confirmButtonColor: '#22c55e', background: '#120a20', color: '#fff',
     });
-
     if (confirm.isConfirmed) {
       try {
         await partnerApplicationService.review(app.id, 'APPROVED');
-        Swal.fire({
-          icon: 'success',
-          title: 'Kemitraan Disetujui!',
-          text: `Akun ${app.userName} (${app.organizationName}) resmi menjadi Organizer.`,
-          timer: 1800,
-          showConfirmButton: false,
-          background: '#120a20',
-          color: '#fff',
-        });
+        Swal.fire({ icon: 'success', title: 'Kemitraan Disetujui!', text: `Akun ${app.userName} (${app.organizationName}) resmi menjadi Organizer.`, timer: 1800, showConfirmButton: false, background: '#120a20', color: '#fff' });
         fetchAdminData();
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menyetujui',
-          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-          background: '#120a20',
-          color: '#fff',
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal Menyetujui', text: err.response?.data?.message || 'Terjadi kesalahan sistem.', background: '#120a20', color: '#fff' });
       }
     }
   };
 
   const handleRejectPartner = async (app: PartnerApplication) => {
     const { value: notes } = await Swal.fire({
-      title: 'Tolak Pengajuan Kemitraan',
-      input: 'textarea',
-      inputLabel: 'Catatan / Alasan Penolakan untuk Pemohon',
-      inputPlaceholder: 'Contoh: Foto identitas tidak jelas, mohon unggah ulang foto KTP yang dapat terbaca...',
-      showCancelButton: true,
-      confirmButtonText: '<i class="fas fa-times me-1"></i> Tolak Pengajuan',
-      confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Batal',
-      background: '#120a20',
-      color: '#fff',
-      inputValidator: (value) => {
-        if (!value || !value.trim()) {
-          return 'Alasan penolakan wajib dicantumkan agar pemohon dapat memperbaiki!';
-        }
-      },
+      title: 'Tolak Pengajuan Kemitraan', input: 'textarea',
+      inputLabel: 'Catatan / Alasan Penolakan',
+      inputPlaceholder: 'Contoh: Foto KTP tidak jelas, mohon unggah ulang...',
+      showCancelButton: true, confirmButtonText: '<i class="fas fa-times me-1"></i> Tolak Pengajuan',
+      confirmButtonColor: '#ef4444', cancelButtonText: 'Batal', background: '#120a20', color: '#fff',
+      inputValidator: (v) => (!v || !v.trim() ? 'Alasan penolakan wajib diisi!' : undefined),
     });
-
     if (notes) {
       try {
         await partnerApplicationService.review(app.id, 'REJECTED', notes.trim());
-        Swal.fire({
-          icon: 'info',
-          title: 'Pengajuan Ditolak',
-          text: 'Status pengajuan telah diubah menjadi REJECTED.',
-          timer: 1800,
-          showConfirmButton: false,
-          background: '#120a20',
-          color: '#fff',
-        });
+        Swal.fire({ icon: 'info', title: 'Pengajuan Ditolak', text: 'Status diubah menjadi REJECTED.', timer: 1800, showConfirmButton: false, background: '#120a20', color: '#fff' });
         fetchAdminData();
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menolak',
-          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-          background: '#120a20',
-          color: '#fff',
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal Menolak', text: err.response?.data?.message || 'Terjadi kesalahan sistem.', background: '#120a20', color: '#fff' });
       }
     }
   };
 
-  const handlePreviewKtp = (imageUrl: string, orgName: string) => {
-    Swal.fire({
-      title: `Foto KTP: ${orgName}`,
-      imageUrl: imageUrl,
-      imageAlt: `KTP ${orgName}`,
-      imageWidth: 500,
-      confirmButtonText: 'Tutup',
-      confirmButtonColor: '#FFD700',
-      background: '#120a20',
-      color: '#fff',
-    });
-  };
+  const handlePreviewKtp = (imageUrl: string, orgName: string) =>
+    Swal.fire({ title: `Foto KTP: ${orgName}`, imageUrl, imageAlt: `KTP ${orgName}`, imageWidth: 500, confirmButtonText: 'Tutup', confirmButtonColor: '#FFD700', background: '#120a20', color: '#fff' });
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  useEffect(() => { fetchAdminData(); }, []);
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   const handleUpdateRole = async (targetUser: User, newRole: string) => {
-    const confirm = await Swal.fire({
-      title: 'Ubah Role Pengguna?',
-      text: `Ubah peran akun ${targetUser.name} (${targetUser.email}) menjadi ${newRole}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Ya, Ubah Role',
-      cancelButtonText: 'Batal',
-    });
-
+    const confirm = await Swal.fire({ title: 'Ubah Role Pengguna?', text: `Ubah peran ${targetUser.name} menjadi ${newRole}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Ubah Role', cancelButtonText: 'Batal' });
     if (confirm.isConfirmed) {
       try {
         await adminService.updateUserRole(targetUser.id, newRole);
-        Swal.fire({
-          icon: 'success',
-          title: 'Role Berhasil Diperbarui',
-          text: `Peran ${targetUser.name} sekarang adalah ${newRole}.`,
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        Swal.fire({ icon: 'success', title: 'Role Diperbarui', text: `Peran ${targetUser.name} sekarang adalah ${newRole}.`, timer: 1500, showConfirmButton: false });
         fetchAdminData();
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Mengubah Role',
-          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal Mengubah Role', text: err.response?.data?.message || 'Terjadi kesalahan sistem.' });
       }
     }
   };
 
   const handleDeleteUser = async (targetUser: User) => {
-    if (targetUser.id === user?.id) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Tidak Diizinkan',
-        text: 'Anda tidak dapat menghapus akun admin Anda sendiri saat sedang login.',
-      });
-      return;
-    }
-
-    const confirm = await Swal.fire({
-      title: 'Hapus Pengguna Platform?',
-      text: `PERINGATAN: Akun ${targetUser.name} (${targetUser.email}) akan dihapus permanen dari sistem.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Hapus Permanen',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#ef4444',
-    });
-
+    if (targetUser.id === user?.id) { Swal.fire({ icon: 'warning', title: 'Tidak Diizinkan', text: 'Anda tidak dapat menghapus akun Anda sendiri.' }); return; }
+    const confirm = await Swal.fire({ title: 'Hapus Pengguna?', text: `Akun ${targetUser.name} (${targetUser.email}) akan dihapus permanen.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Hapus Permanen', cancelButtonText: 'Batal', confirmButtonColor: '#ef4444' });
     if (confirm.isConfirmed) {
       try {
         await adminService.deleteUser(targetUser.id);
-        Swal.fire({
-          icon: 'success',
-          title: 'Pengguna Dihapus',
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        Swal.fire({ icon: 'success', title: 'Pengguna Dihapus', timer: 1500, showConfirmButton: false });
         fetchAdminData();
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menghapus',
-          text: err.response?.data?.message || 'Terjadi kesalahan saat menghapus pengguna.',
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal Menghapus', text: err.response?.data?.message || 'Terjadi kesalahan.' });
       }
     }
   };
@@ -259,544 +161,266 @@ export const AdminDashboardPage: React.FC = () => {
   const handleCreateCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catName.trim()) return;
-
     setIsSubmittingCat(true);
     try {
       await adminService.createCategory({ name: catName.trim(), description: catDesc.trim() });
-      Swal.fire({
-        icon: 'success',
-        title: 'Kategori Berhasil Dibuat',
-        text: `Kategori '${catName}' kini aktif untuk semua penyelenggara acara.`,
-        timer: 1800,
-        showConfirmButton: false,
-      });
-      setShowAddCatModal(false);
-      setCatName('');
-      setCatDesc('');
-      fetchAdminData();
+      Swal.fire({ icon: 'success', title: 'Kategori Berhasil Dibuat', text: `Kategori '${catName}' kini aktif.`, timer: 1800, showConfirmButton: false });
+      setShowAddCatModal(false); setCatName(''); setCatDesc(''); fetchAdminData();
     } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menambahkan Kategori',
-        text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-      });
-    } finally {
-      setIsSubmittingCat(false);
-    }
+      Swal.fire({ icon: 'error', title: 'Gagal Menambahkan Kategori', text: err.response?.data?.message || 'Terjadi kesalahan sistem.' });
+    } finally { setIsSubmittingCat(false); }
   };
 
   const handleExportExcel = async (eventId?: string, eventName?: string) => {
     setIsExporting(true);
     try {
-      Swal.fire({
-        title: 'Mempersiapkan Dokumen Excel...',
-        text: 'Mengonsolidasikan transaksi tiket dengan format Apache POI...',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
-      });
-
+      Swal.fire({ title: 'Mempersiapkan Excel...', text: 'Mengonsolidasikan transaksi platform...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       const blob = await bookingService.exportBookingsExcel(eventId);
-      const filename = eventName
-        ? `Laporan_Admin_${eventName.replace(/\s+/g, '_')}.xlsx`
-        : `Laporan_Konsolidasi_Penjualan_Platform_${Date.now()}.xlsx`;
-
+      const filename = eventName ? `Laporan_Admin_${eventName.replace(/\s+/g, '_')}.xlsx` : `Laporan_Konsolidasi_${Date.now()}.xlsx`;
       triggerFileDownload(blob, filename);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Ekspor Berhasil!',
-        text: `File ${filename} berhasil diunduh.`,
-        timer: 2000,
-        showConfirmButton: false,
-      });
+      Swal.fire({ icon: 'success', title: 'Ekspor Berhasil!', text: `${filename} berhasil diunduh.`, timer: 2000, showConfirmButton: false });
     } catch (err) {
-      console.error('Gagal mengekspor laporan Excel:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Ekspor Excel',
-        text: 'Terjadi kesalahan saat mengekspor laporan penjualan tiket platform.',
-      });
-    } finally {
-      setIsExporting(false);
-    }
+      Swal.fire({ icon: 'error', title: 'Gagal Ekspor Excel', text: 'Terjadi kesalahan saat mengekspor.' });
+    } finally { setIsExporting(false); }
   };
 
-  const formatRupiah = (val: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
-  };
+  const formatRupiah = (val: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   const handleManualConfirm = async (booking: BookingResponseData) => {
-    const confirm = await Swal.fire({
-      title: 'Konfirmasi Pembayaran Manual?',
-      text: `Setujui pelunasan tiket pesanan ${booking.id.substring(0, 8)} untuk ${booking.buyerName || 'Pembeli'} senilai ${formatRupiah(booking.totalAmount)}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Ya, Konfirmasi Lunas',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#22c55e',
-      cancelButtonColor: '#4b5563',
-    });
-
+    const confirm = await Swal.fire({ title: 'Konfirmasi Pembayaran?', text: `Setujui pelunasan pesanan ${booking.id.substring(0, 8)} untuk ${booking.buyerName} senilai ${formatRupiah(booking.totalAmount)}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Konfirmasi Lunas', cancelButtonText: 'Batal', confirmButtonColor: '#22c55e' });
     if (confirm.isConfirmed) {
       try {
-        Swal.fire({
-          title: 'Memproses Konfirmasi...',
-          text: 'Mengubah status pesanan dan menerbitkan e-ticket...',
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading(),
-        });
-
+        Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         await bookingService.manualConfirmPayment(booking.id);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Pesanan Telah Lunas!',
-          text: 'Status tiket diperbarui menjadi LUNAS dan tiket resmi telah aktif.',
-          timer: 1800,
-          showConfirmButton: false,
-        });
-
+        Swal.fire({ icon: 'success', title: 'Pesanan Lunas!', text: 'Status tiket diperbarui ke LUNAS.', timer: 1800, showConfirmButton: false });
         fetchAdminData();
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Konfirmasi',
-          text: err.response?.data?.message || 'Terjadi kesalahan sistem.',
-          confirmButtonColor: '#FFD700',
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal Konfirmasi', text: err.response?.data?.message || 'Terjadi kesalahan sistem.', confirmButtonColor: '#FFD700' });
       }
     }
   };
 
   const handleDownloadTicketPdf = async (booking: BookingResponseData) => {
     try {
-      Swal.fire({
-        title: 'Mengunduh Dokumen...',
-        text: 'Menyiapkan berkas e-ticket PDF resmi...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+      Swal.fire({ title: 'Mengunduh PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       await bookingService.downloadTicketPdf(booking.id, booking.eventName);
-      Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Diunduh!',
-        text: 'Dokumen tiket PDF telah disimpan.',
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      Swal.fire({ icon: 'success', title: 'Berhasil Diunduh!', timer: 1500, showConfirmButton: false });
     } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Mengunduh',
-        text: err.response?.data?.message || 'Terjadi kesalahan saat mengunduh e-ticket PDF.',
-      });
+      Swal.fire({ icon: 'error', title: 'Gagal Mengunduh', text: err.response?.data?.message || 'Terjadi kesalahan.' });
     }
   };
 
-  return (
-    <div className="dashboard-layout">
-      {/* Background Subtle Geometric Pattern */}
-      <div className="pattern-geometric-overlay" style={{ opacity: 0.15 }}></div>
+  const paidCount = bookings.filter((b) => b.status === 'PAID').length;
+  const initials = user?.name ? user.name.split(' ').map((w) => w[0]).join('').substring(0, 2).toUpperCase() : 'SA';
 
-      {/* Luxury Left Sidebar Navigation (Super Admin Exclusive) */}
-      <aside className={`dashboard-sidebar ${sidebarOpen ? 'show' : ''}`}>
+  // ── nav items ──────────────────────────────────────────────────────────────
+  const navItems: { tab: typeof activeTab; icon: string; label: string; badge?: number; color?: string }[] = [
+    { tab: 'overview', icon: 'fa-chart-line', label: 'Ringkasan Platform' },
+    { tab: 'bookings', icon: 'fa-receipt', label: 'Transaksi & Tiket', badge: bookings.length, color: '#FFD700' },
+    { tab: 'users', icon: 'fa-users-gear', label: 'Kelola Pengguna', badge: totalUsers, color: '#60a5fa' },
+    { tab: 'partners', icon: 'fa-id-card', label: 'Verifikasi Mitra (KYC)', badge: pendingPartnerCount || undefined, color: '#f87171' },
+    { tab: 'categories', icon: 'fa-layer-group', label: 'Kategori Acara', badge: categories.length, color: '#FFD700' },
+    { tab: 'events', icon: 'fa-calendar-check', label: 'Audit Semua Acara', badge: events.length },
+  ];
+
+  return (
+    <div className="dashboard-layout" style={{ background: '#080512' }}>
+
+      {/* Same background as organizer dashboard */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'url(/images/organizer_dashboard_bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3, pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'linear-gradient(135deg, rgba(8,5,18,0.94) 0%, rgba(10,5,24,0.9) 100%)', pointerEvents: 'none' }} />
+
+      {/* ── SIDEBAR ─────────────────────────────────────────────────────────── */}
+      <aside className={`dashboard-sidebar ${sidebarOpen ? 'show' : ''}`} style={{ zIndex: 1050 }}>
         <div>
-          {/* Brand Logo & Super Admin Badge */}
-          <div className="mb-4 pb-3 border-bottom" style={{ borderColor: 'rgba(255, 215, 0, 0.15)' }}>
-            <Link to="/" className="d-block mb-2 text-decoration-none">
-              <EventEaseLogo size="md" />
-            </Link>
-            <span className="gold-glow-badge" style={{ fontSize: '10px', letterSpacing: '1px' }}>
-              <i className="fas fa-shield-alt text-warning me-1"></i> SUPER ADMIN CONSOLE
+          <div className="mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255,215,0,0.1)' }}>
+            <Link to="/" className="d-block mb-2 text-decoration-none"><EventEaseLogo size="md" /></Link>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', background: 'linear-gradient(90deg, rgba(239,68,68,0.14), rgba(239,68,68,0.04))', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+              <i className="fas fa-shield-alt" style={{ fontSize: '9px' }}></i> Super Admin Console
             </span>
           </div>
 
-          {/* Navigation Links (Fokus Regulasi & Pengawasan) */}
-          <nav>
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'overview' ? 'active' : ''}`}
-            >
-              <i className="fas fa-chart-line"></i>
-              <span>Ringkasan Platform</span>
-            </button>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {navItems.map(({ tab, icon, label, badge, color }) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`sidebar-nav-item w-100 text-start bg-transparent border-0 ${activeTab === tab ? 'active' : ''}`}
+                style={{ cursor: 'pointer' }}
+              >
+                <i className={`fas ${icon}`} style={color ? { color } : {}}></i>
+                <span>{label}</span>
+                {badge !== undefined && badge > 0 && (
+                  <span style={{ marginLeft: 'auto', background: tab === 'partners' && pendingPartnerCount > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)', border: `1px solid ${tab === 'partners' && pendingPartnerCount > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.12)'}`, color: tab === 'partners' && pendingPartnerCount > 0 ? '#f87171' : 'rgba(255,255,255,0.5)', borderRadius: '10px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            ))}
 
-            <button
-              onClick={() => setActiveTab('bookings')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'bookings' ? 'active' : ''}`}
-            >
-              <i className="fas fa-receipt text-warning"></i>
-              <span>Transaksi & Tiket ({bookings.length})</span>
-            </button>
+            <div style={{ margin: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}></div>
 
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'users' ? 'active' : ''}`}
-            >
-              <i className="fas fa-users-gear text-info"></i>
-              <span>Kelola Pengguna ({totalUsers})</span>
+            <button onClick={() => handleExportExcel()} disabled={isExporting} className="sidebar-nav-item w-100 text-start bg-transparent border-0" style={{ cursor: 'pointer' }}>
+              <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`} style={{ color: '#4ade80' }}></i>
+              <span style={{ color: '#4ade80', fontWeight: 600 }}>Ekspor Konsolidasi</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('partners')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer d-flex align-items-center justify-content-between ${activeTab === 'partners' ? 'active' : ''}`}
-            >
-              <div className="d-flex align-items-center gap-2">
-                <i className="fas fa-id-card text-warning"></i>
-                <span>Verifikasi Mitra (KYC)</span>
-              </div>
-              {pendingPartnerCount > 0 && (
-                <span className="badge bg-danger rounded-pill font-monospace" style={{ fontSize: '10px' }}>
-                  {pendingPartnerCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'categories' ? 'active' : ''}`}
-            >
-              <i className="fas fa-layer-group text-warning"></i>
-              <span>Kelola Kategori ({categories.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer ${activeTab === 'events' ? 'active' : ''}`}
-            >
-              <i className="fas fa-calendar-check"></i>
-              <span>Audit Seluruh Acara ({events.length})</span>
-            </button>
-
-            <button
-              onClick={() => handleExportExcel()}
-              disabled={isExporting}
-              className="sidebar-nav-item w-100 text-start bg-transparent border-0 cursor-pointer"
-            >
-              <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'} text-success`}></i>
-              <span className="text-success fw-semibold">Ekspor Konsolidasi (.xlsx)</span>
-            </button>
-
             <Link to="/events" className="sidebar-nav-item">
               <i className="fas fa-globe"></i>
-              <span>Katalog Acara Publik</span>
+              <span>Katalog Publik</span>
             </Link>
           </nav>
         </div>
 
-        {/* Sidebar Footer User Profile */}
-        <div className="pt-3 border-top" style={{ borderColor: 'rgba(255, 215, 0, 0.15)' }}>
-          <div className="d-flex align-items-center gap-3 mb-3 p-2 rounded" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center fw-bold"
-              style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #FFD700, #b8860b)', color: '#000', fontSize: '15px' }}
-            >
-              A
+        {/* Profile footer */}
+        <div style={{ borderTop: '1px solid rgba(255,215,0,0.1)', paddingTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #ef4444, #b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '14px' }}>
+              {initials}
             </div>
-            <div className="overflow-hidden">
-              <div className="text-white fw-bold text-truncate" style={{ fontSize: '13px' }}>{user?.name}</div>
-              <div className="text-secondary text-truncate" style={{ fontSize: '11px' }}>{user?.email}</div>
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
             </div>
           </div>
-
-          <button
-            onClick={handleLogout}
-            className="btn-kikk-outline btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-            style={{ borderRadius: '10px', fontSize: '12px' }}
+          <button onClick={handleLogout}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.1)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.35)'; (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.55)'; }}
           >
             <i className="fas fa-sign-out-alt"></i> Keluar Console
           </button>
         </div>
       </aside>
 
-      {/* Main Dashboard Content */}
-      <main className="dashboard-main-content">
-        {/* Mobile Toggle & Top Greeting Header */}
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <div className="d-flex align-items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="btn btn-outline-warning d-lg-none"
-              style={{ borderRadius: '8px', padding: '6px 12px' }}
-            >
+      {/* ── MAIN ────────────────────────────────────────────────────────────── */}
+      <main className="dashboard-main-content" style={{ position: 'relative', zIndex: 1 }}>
+
+        {/* Header */}
+        <div className="anim-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="d-lg-none" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', borderRadius: '10px', padding: '7px 11px', cursor: 'pointer' }}>
               <i className="fas fa-bars"></i>
             </button>
             <div>
-              <div className="d-flex align-items-center gap-2 mb-1">
-                <span className="status-indicator-badge">
-                  <i className="fas fa-shield-halved"></i> Hak Akses Tertinggi Super Administrator
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px' }}>
+                  <i className="fas fa-shield-halved" style={{ fontSize: '10px' }}></i> Hak Akses Tertinggi
                 </span>
               </div>
-              <h1 className="kikk-title m-0" style={{ fontSize: '2rem' }}>
-                Pusat Pengawasan Ekosistem Platform
+              <h1 className="kikk-title m-0" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', letterSpacing: '-0.5px' }}>
+                Pusat Pengawasan Platform
               </h1>
-              <p className="text-secondary small m-0 mt-1">
-                Kelola hak akses pengguna/organizer, regulasi kategori tiket, dan audit konsolidasi keuangan sistem.
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '4px 0 0' }}>
+                Kelola hak akses, kurasi mitra KYC, dan audit konsolidasi keuangan sistem.
               </p>
             </div>
           </div>
 
-          {/* Subtle System Status Pill */}
-          <div className="d-flex align-items-center gap-2">
-            <div
-              className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
-              style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
-            >
-              <span className="rounded-circle bg-success" style={{ width: '8px', height: '8px', boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)' }}></span>
-              <span className="text-secondary small fw-medium" style={{ fontSize: '11px' }}>
-                Konsol Super Admin &bull; {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
-            </div>
+          {/* Status pill — no blinking dot, replaced with thin accent bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '50px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'linear-gradient(to bottom, #4ade80, #22c55e)', flexShrink: 0 }}></span>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 500 }}>
+              Konsol Aktif &bull; {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
           </div>
         </div>
 
-        {/* 4-Column Platform Infrastructure Metrics */}
-        <div className="row g-3 mb-4">
-          <div className="col-12 col-sm-6 col-xl-3">
-            <div className="stat-box-luxury h-100">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '48px', height: '48px', background: 'rgba(255, 215, 0, 0.1)', flexShrink: 0 }}
-              >
-                <i className="fas fa-calendar-check text-warning fs-4"></i>
+        {/* ── BENTO METRICS ──────────────────────────────────────────────────── */}
+        <div className="anim-fade-in anim-delay-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+          {[
+            { label: 'Total Acara', value: events.length, sub: 'Terdaftar di platform', color: '#FFD700', bg: 'rgba(255,215,0,0.05)', border: 'rgba(255,215,0,0.2)', icon: 'fa-calendar-check' },
+            { label: 'Total Pengguna', value: totalUsers, sub: 'Akun aktif terdaftar', color: '#60a5fa', bg: 'rgba(59,130,246,0.05)', border: 'rgba(59,130,246,0.2)', icon: 'fa-users-gear' },
+            { label: 'Transaksi', value: bookings.length, sub: `${paidCount} pesanan lunas`, color: '#4ade80', bg: 'rgba(34,197,94,0.05)', border: 'rgba(34,197,94,0.2)', icon: 'fa-receipt' },
+            { label: 'Kategori', value: categories.length, sub: 'Kategori resmi aktif', color: '#FFD700', bg: 'rgba(255,215,0,0.05)', border: 'rgba(255,215,0,0.2)', icon: 'fa-layer-group' },
+            ...(pendingPartnerCount > 0 ? [{ label: 'KYC Menunggu', value: pendingPartnerCount, sub: 'Butuh persetujuan admin', color: '#f87171', bg: 'rgba(239,68,68,0.05)', border: 'rgba(239,68,68,0.25)', icon: 'fa-id-card' }] : []),
+          ].map(({ label, value, sub, color, bg, border, icon }) => (
+            <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: '20px', padding: '22px 24px', backdropFilter: 'blur(20px)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: bg, pointerEvents: 'none' }}></div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>{label}</div>
+              <div style={{ fontSize: isLoading ? '1.5rem' : '2.2rem', fontWeight: 800, color, lineHeight: 1, fontFamily: "'Playfair Display', serif" }}>
+                {isLoading ? '—' : value}
               </div>
-              <div>
-                <div className="text-secondary small fw-medium">Total Acara Terdaftar</div>
-                <div className="fs-3 fw-bold text-white">{events.length} Acara</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-12 col-sm-6 col-xl-3">
-            <div className="stat-box-luxury h-100">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '48px', height: '48px', background: 'rgba(59, 130, 246, 0.1)', flexShrink: 0 }}
-              >
-                <i className="fas fa-users-gear text-info fs-4"></i>
-              </div>
-              <div>
-                <div className="text-secondary small fw-medium">Total Akun Terdaftar</div>
-                <div className="fs-3 fw-bold text-info">{totalUsers} Akun</div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px' }}>
+                <i className={`fas ${icon} me-1`}></i>{sub}
               </div>
             </div>
-          </div>
-
-          <div className="col-12 col-sm-6 col-xl-3">
-            <div className="stat-box-luxury h-100">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '48px', height: '48px', background: 'rgba(34, 197, 94, 0.1)', flexShrink: 0 }}
-              >
-                <i className="fas fa-receipt text-success fs-4"></i>
-              </div>
-              <div>
-                <div className="text-secondary small fw-medium">Transaksi Tiket</div>
-                <div className="fs-3 fw-bold text-white">{bookings.length} Pesanan</div>
-                <div className="text-success small fw-semibold">
-                  <i className="fas fa-check-circle me-1"></i> {bookings.filter((b) => b.status === 'PAID').length} Lunas
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-12 col-sm-6 col-xl-3">
-            <div className="stat-box-luxury h-100">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '48px', height: '48px', background: 'rgba(234, 179, 8, 0.1)', flexShrink: 0 }}
-              >
-                <i className="fas fa-layer-group text-warning fs-4"></i>
-              </div>
-              <div>
-                <div className="text-secondary small fw-medium">Kategori Resmi & Sistem</div>
-                <div className="fs-3 fw-bold text-white">{categories.length} Kategori</div>
-                <div className="text-success small fw-semibold">
-                  <i className="fas fa-circle text-success me-1" style={{ fontSize: '8px' }}></i> Postgres & Midtrans Live
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* TAB TRANSAKSI: AUDIT TRANSAKSI & PEMBAYARAN TIKET */}
+        {/* ── TRANSAKSI ──────────────────────────────────────────────────────── */}
         {(activeTab === 'overview' || activeTab === 'bookings') && (
-          <div className="luxury-glass-card p-4 mb-4">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+          <div className="luxury-glass-card anim-fade-in anim-delay-2" style={{ padding: '24px 28px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
               <div>
-                <div className="d-flex align-items-center gap-2 mb-1">
-                  <span className="gold-glow-badge" style={{ fontSize: '10px' }}>
-                    <i className="fas fa-money-bill-wave text-warning me-1"></i> MONITORING FINANSIAL & GATEWAY
-                  </span>
-                </div>
-                <h3 className="kikk-title m-0 fs-5">
-                  <i className="fas fa-receipt text-warning me-2"></i> Audit Transaksi & Pelunasan Tiket ({bookings.length})
+                <h3 className="kikk-title m-0" style={{ fontSize: '1.15rem' }}>
+                  <i className="fas fa-receipt me-2" style={{ color: '#FFD700' }}></i>Audit Transaksi &amp; Pelunasan Tiket
+                  <span style={{ marginLeft: '10px', background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', borderRadius: '8px', padding: '2px 10px', fontSize: '11px', fontWeight: 700, verticalAlign: 'middle' }}>{bookings.length}</span>
                 </h3>
-                <p className="text-secondary small m-0 mt-1">
-                  Pantau status pelunasan Midtrans Snap, lakukan sinkronisasi verifikasi instan, atau konfirmasi manual jika diperlukan.
-                </p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '4px 0 12px' }}>Pantau pelunasan Midtrans Snap, konfirmasi manual, dan unduh e-ticket PDF.</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(['ALL', 'PAID', 'PENDING', 'CANCELLED'] as const).map((s) => (
+                    <button key={s} onClick={() => setBookingStatusFilter(s)}
+                      style={{ padding: '5px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: `1px solid ${bookingStatusFilter === s ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`, background: bookingStatusFilter === s ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)', color: bookingStatusFilter === s ? '#FFD700' : 'rgba(255,255,255,0.5)' }}>
+                      {s === 'ALL' ? `Semua (${bookings.length})` : s === 'PAID' ? `Lunas (${bookings.filter(b => b.status === 'PAID').length})` : s === 'PENDING' ? `Menunggu (${bookings.filter(b => b.status === 'PENDING').length})` : `Batal (${bookings.filter(b => b.status === 'CANCELLED').length})`}
+                    </button>
+                  ))}
+                </div>
               </div>
-
-              <div className="d-flex align-items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => handleExportExcel()}
-                  disabled={isExporting}
-                  className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2 py-1 px-3"
-                  style={{ fontSize: '11px', borderRadius: '8px', borderColor: 'rgba(34, 197, 94, 0.4)', color: '#4ade80', background: 'rgba(34, 197, 94, 0.06)' }}
-                  title="Ekspor seluruh rekap transaksi platform format .xlsx"
-                >
-                  <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
-                  <span>Ekspor Konsolidasi (.xlsx)</span>
-                </button>
-              </div>
-
-              {/* Status Filter Tabs */}
-              <div className="d-flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBookingStatusFilter('ALL')}
-                  className={`category-pill ${bookingStatusFilter === 'ALL' ? 'active' : ''}`}
-                  style={{ fontSize: '12px', padding: '6px 14px' }}
-                >
-                  Semua ({bookings.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBookingStatusFilter('PAID')}
-                  className={`category-pill ${bookingStatusFilter === 'PAID' ? 'active' : ''}`}
-                  style={{ fontSize: '12px', padding: '6px 14px' }}
-                >
-                  <i className="fas fa-circle-check text-success me-1"></i> Lunas ({bookings.filter((b) => b.status === 'PAID').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBookingStatusFilter('PENDING')}
-                  className={`category-pill ${bookingStatusFilter === 'PENDING' ? 'active' : ''}`}
-                  style={{ fontSize: '12px', padding: '6px 14px' }}
-                >
-                  <i className="fas fa-hourglass-half text-warning me-1"></i> Menunggu Bayar ({bookings.filter((b) => b.status === 'PENDING').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBookingStatusFilter('CANCELLED')}
-                  className={`category-pill ${bookingStatusFilter === 'CANCELLED' ? 'active' : ''}`}
-                  style={{ fontSize: '12px', padding: '6px 14px' }}
-                >
-                  <i className="fas fa-ban text-secondary me-1"></i> Batal ({bookings.filter((b) => b.status === 'CANCELLED').length})
-                </button>
-              </div>
+              <button onClick={() => handleExportExcel()} disabled={isExporting} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '12px', border: '1px solid rgba(74,222,128,0.3)', background: 'rgba(34,197,94,0.06)', color: '#4ade80', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                <i className={`fas ${isExporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i> Ekspor .xlsx
+              </button>
             </div>
 
             {isLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-warning" role="status"></div>
-                <div className="text-secondary small mt-2">Memuat transaksi platform...</div>
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px' }}><div className="spinner-border" style={{ color: '#FFD700', width: '28px', height: '28px' }} role="status"><span className="visually-hidden">Loading...</span></div></div>
             ) : filteredBookings.length === 0 ? (
-              <div className="text-center py-4 text-secondary">
-                <i className="fas fa-inbox fa-2x mb-2 d-block text-warning" style={{ opacity: 0.5 }}></i>
-                Tidak ada data transaksi tiket untuk filter status ini.
+              <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+                <i className="fas fa-inbox" style={{ fontSize: '28px', display: 'block', marginBottom: '10px', opacity: 0.4 }}></i>
+                Tidak ada data transaksi untuk filter ini.
               </div>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
-                  <thead>
-                    <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
-                      <th className="py-2">ID PESANAN & TGL</th>
-                      <th className="py-2">ACARA & KATEGORI</th>
-                      <th className="py-2">PEMBELI</th>
-                      <th className="py-2 text-center">KURSI</th>
-                      <th className="py-2">TOTAL BAYAR</th>
-                      <th className="py-2">STATUS</th>
-                      <th className="py-2 text-end">KONTROL / AKSI</th>
-                    </tr>
-                  </thead>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['ID PESANAN', 'ACARA & TIKET', 'PEMBELI', 'KURSI', 'TOTAL', 'STATUS', 'AKSI'].map((h, i) => <th key={i} style={th(h, i >= 5 ? 'right' : 'left')}>{h}</th>)}</tr></thead>
                   <tbody>
                     {filteredBookings.map((b) => (
-                      <tr key={b.id} style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-                        <td className="py-2 font-monospace">
-                          <div className="text-white fw-bold" style={{ fontSize: '12px' }}>
-                            #{b.id.substring(0, 8).toUpperCase()}
-                          </div>
-                          <div className="text-secondary" style={{ fontSize: '10px' }}>
-                            {b.bookingDate || '-'}
-                          </div>
+                      <tr key={b.id}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        style={{ transition: 'background 0.15s' }}
+                      >
+                        <td style={tdBase}>
+                          <div style={{ color: '#fff', fontWeight: 700, fontSize: '12px', fontFamily: 'monospace' }}>#{b.id.substring(0, 8).toUpperCase()}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{b.bookingDate || '-'}</div>
                         </td>
-                        <td className="py-2">
-                          <div className="text-white fw-semibold" style={{ fontSize: '13px' }}>
-                            {b.eventName}
-                          </div>
-                          <div className="text-warning small" style={{ fontSize: '11px' }}>
-                            {b.ticketCategoryName || 'General Pass'}
-                          </div>
+                        <td style={tdBase}>
+                          <div style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{b.eventName}</div>
+                          <div style={{ color: '#FFD700', fontSize: '11px' }}>{b.ticketCategoryName || 'General Pass'}</div>
                         </td>
-                        <td className="py-2">
-                          <div className="text-white fw-medium" style={{ fontSize: '12px' }}>
-                            {b.buyerName || 'Pembeli'}
-                          </div>
-                          <div className="text-secondary" style={{ fontSize: '11px' }}>
-                            {b.buyerEmail || '-'}
-                          </div>
+                        <td style={tdBase}>
+                          <div style={{ color: '#fff', fontSize: '12px' }}>{b.buyerName || 'Pembeli'}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>{b.buyerEmail || '-'}</div>
                         </td>
-                        <td className="text-center py-2">
-                          <span className="badge bg-secondary" style={{ fontSize: '11px' }}>
-                            {b.quantity} Kursi
+                        <td style={{ ...tdBase, textAlign: 'center' }}>
+                          <span style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '8px', padding: '3px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.7)' }}>{b.quantity}</span>
+                        </td>
+                        <td style={tdBase}><span style={{ color: '#fff', fontWeight: 700, fontSize: '13px' }}>{formatRupiah(b.totalAmount)}</span></td>
+                        <td style={tdBase}>
+                          <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', background: b.status === 'PAID' ? 'rgba(34,197,94,0.15)' : b.status === 'PENDING' ? 'rgba(234,179,8,0.15)' : 'rgba(255,255,255,0.07)', border: `1px solid ${b.status === 'PAID' ? 'rgba(34,197,94,0.3)' : b.status === 'PENDING' ? 'rgba(234,179,8,0.3)' : 'rgba(255,255,255,0.12)'}`, color: b.status === 'PAID' ? '#4ade80' : b.status === 'PENDING' ? '#fbbf24' : 'rgba(255,255,255,0.4)' }}>
+                            {b.status === 'PAID' ? 'LUNAS' : b.status === 'PENDING' ? 'MENUNGGU' : b.status}
                           </span>
                         </td>
-                        <td className="py-2">
-                          <div className="text-white fw-bold" style={{ fontSize: '13px' }}>
-                            {formatRupiah(b.totalAmount)}
-                          </div>
-                        </td>
-                        <td className="py-2">
-                          {b.status === 'PAID' ? (
-                            <span
-                              className="badge bg-success text-white"
-                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
-                            >
-                              <i className="fas fa-circle-check me-1"></i> LUNAS
-                            </span>
-                          ) : b.status === 'PENDING' ? (
-                            <span
-                              className="badge bg-warning text-dark"
-                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
-                            >
-                              <i className="fas fa-hourglass-half me-1"></i> MENUNGGU BAYAR
-                            </span>
-                          ) : (
-                            <span
-                              className="badge bg-secondary text-white"
-                              style={{ padding: '5px 12px', borderRadius: '50px', fontSize: '10px', letterSpacing: '0.5px' }}
-                            >
-                              {b.status}
-                            </span>
-                          )}
-                        </td>
-                        <td className="text-end py-2">
-                          <div className="d-flex justify-content-end gap-2">
+                        <td style={{ ...tdBase, textAlign: 'right' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                             {b.status === 'PENDING' && (
-                              <button
-                                type="button"
-                                onClick={() => handleManualConfirm(b)}
-                                className="btn btn-sm btn-outline-success py-1 px-3"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Setujui pelunasan secara manual (Cash / Transfer Bank)"
-                              >
-                                <i className="fas fa-check-double me-1"></i> Konfirmasi Lunas
+                              <button onClick={() => handleManualConfirm(b)} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.06)', color: '#4ade80', fontSize: '11px', cursor: 'pointer' }} title="Konfirmasi manual">
+                                <i className="fas fa-check-double me-1"></i>Lunas
                               </button>
                             )}
                             {(b.status === 'PAID' || b.status === 'CHECKED_IN') && (
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadTicketPdf(b)}
-                                className="btn btn-sm btn-outline-light py-1 px-3"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Unduh E-Ticket PDF"
-                              >
-                                <i className="fas fa-file-pdf me-1 text-danger"></i> Unduh PDF
+                              <button onClick={() => handleDownloadTicketPdf(b)} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
+                                <i className="fas fa-file-pdf me-1" style={{ color: '#f87171' }}></i>PDF
                               </button>
                             )}
                           </div>
@@ -810,96 +434,61 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 1: KELOLA PENGGUNA PLATFORM (Eksklusif Super Admin) */}
+        {/* ── KELOLA PENGGUNA ─────────────────────────────────────────────────── */}
         {(activeTab === 'overview' || activeTab === 'users') && (
-          <div className="luxury-glass-card p-4 mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <h3 className="kikk-title m-0 fs-5">
-                  <i className="fas fa-users-gear text-info me-2"></i> Manajemen Akun Pengguna & Hak Akses Role
-                </h3>
-                <p className="text-secondary small m-0 mt-1">
-                  Daftar seluruh akun terdaftar. Promosi menjadi Penyelenggara dikurasi secara resmi melalui berkas di tab <strong>Verifikasi Mitra (KYC)</strong>.
-                </p>
-              </div>
-            </div>
-
+          <div className="luxury-glass-card anim-fade-in anim-delay-2" style={{ padding: '24px 28px', marginBottom: '24px' }}>
+            <h3 className="kikk-title m-0" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>
+              <i className="fas fa-users-gear me-2" style={{ color: '#60a5fa' }}></i>Manajemen Akun Pengguna &amp; Hak Akses
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '4px 0 16px' }}>
+              Promosi ke Penyelenggara hanya melalui kurasi KYC di tab <strong style={{ color: '#FFD700' }}>Verifikasi Mitra</strong>.
+            </p>
             {isLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-warning" role="status"></div>
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px' }}><div className="spinner-border" style={{ color: '#FFD700', width: '28px', height: '28px' }} role="status"><span className="visually-hidden">Loading...</span></div></div>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
-                  <thead>
-                    <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
-                      <th className="py-2">PENGGUNA</th>
-                      <th className="py-2">EMAIL</th>
-                      <th className="py-2">KONTAK / HP</th>
-                      <th className="py-2">PERAN (ROLE)</th>
-                      <th className="py-2 text-end">AKSI KONTROL</th>
-                    </tr>
-                  </thead>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['PENGGUNA', 'EMAIL', 'KONTAK', 'PERAN', 'AKSI'].map((h, i) => <th key={i} style={th(h, i === 4 ? 'right' : 'left')}>{h}</th>)}</tr></thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-                        <td className="py-2">
-                          <div className="d-flex align-items-center gap-2">
+                      <tr key={u.id}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        style={{ transition: 'background 0.15s' }}
+                      >
+                        <td style={tdBase}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             {u.profilePicture ? (
-                              <img src={u.profilePicture} alt={u.name} className="rounded-circle" style={{ width: '32px', height: '32px', objectFit: 'cover' }} />
+                              <img src={u.profilePicture} alt={u.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                             ) : (
-                              <div className="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold" style={{ width: '32px', height: '32px', fontSize: '12px' }}>
-                                {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
+                                {u.name?.charAt(0).toUpperCase() || 'U'}
                               </div>
                             )}
-                            <div className="fw-semibold text-white">{u.name}</div>
+                            <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{u.name}</span>
                           </div>
                         </td>
-                        <td className="text-secondary small">{u.email}</td>
-                        <td className="text-secondary small">{u.phone || '-'}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              u.role === 'ADMIN'
-                                ? 'bg-danger text-white'
-                                : u.role === 'ORGANIZER'
-                                ? 'bg-warning text-dark'
-                                : 'bg-secondary text-white'
-                            }`}
-                            style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '10px', letterSpacing: '0.5px' }}
-                          >
+                        <td style={{ ...tdBase, color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{u.email}</td>
+                        <td style={{ ...tdBase, color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{u.phone || '-'}</td>
+                        <td style={tdBase}>
+                          <span style={{ padding: '3px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: 700, background: u.role === 'ADMIN' ? 'rgba(239,68,68,0.15)' : u.role === 'ORGANIZER' ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.07)', border: `1px solid ${u.role === 'ADMIN' ? 'rgba(239,68,68,0.3)' : u.role === 'ORGANIZER' ? 'rgba(255,215,0,0.3)' : 'rgba(255,255,255,0.12)'}`, color: u.role === 'ADMIN' ? '#f87171' : u.role === 'ORGANIZER' ? '#FFD700' : 'rgba(255,255,255,0.5)' }}>
                             {u.role}
                           </span>
                         </td>
-                        <td className="text-end py-2">
-                          <div className="d-flex justify-content-end gap-2">
+                        <td style={{ ...tdBase, textAlign: 'right' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                             {u.role === 'USER' && (
-                              <button
-                                onClick={() => setActiveTab('partners')}
-                                className="btn btn-sm btn-outline-secondary py-1 px-2 text-secondary"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Promosi peran hanya melalui verifikasi berkas KYC resmi di tab Verifikasi Mitra"
-                              >
-                                <i className="fas fa-id-card me-1 text-warning"></i> Cek KYC
+                              <button onClick={() => setActiveTab('partners')} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.25)', background: 'rgba(255,215,0,0.06)', color: '#FFD700', fontSize: '11px', cursor: 'pointer' }} title="Cek pengajuan KYC mitra">
+                                <i className="fas fa-id-card me-1"></i>Cek KYC
                               </button>
                             )}
                             {u.role === 'ORGANIZER' && (
-                              <button
-                                onClick={() => handleUpdateRole(u, 'USER')}
-                                className="btn btn-sm btn-outline-warning py-1 px-2"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Cabut hak akses organizer (kembalikan ke akun User biasa)"
-                              >
-                                <i className="fas fa-user-slash me-1"></i> Cabut Organizer
+                              <button onClick={() => handleUpdateRole(u, 'USER')} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.25)', background: 'rgba(255,215,0,0.06)', color: '#FFD700', fontSize: '11px', cursor: 'pointer' }} title="Cabut status organizer">
+                                <i className="fas fa-user-slash me-1"></i>Cabut
                               </button>
                             )}
                             {u.role !== 'ADMIN' && (
-                              <button
-                                onClick={() => handleDeleteUser(u)}
-                                className="btn btn-sm btn-outline-danger py-1 px-2"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Hapus pengguna"
-                              >
+                              <button onClick={() => handleDeleteUser(u)} style={{ padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#f87171', fontSize: '11px', cursor: 'pointer' }} title="Hapus pengguna">
                                 <i className="fas fa-trash"></i>
                               </button>
                             )}
@@ -914,169 +503,87 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB: VERIFIKASI KEMITRAAN PENYELENGGARA (KYC / B2B Onboarding) */}
+        {/* ── KYC MITRA ──────────────────────────────────────────────────────── */}
         {(activeTab === 'overview' || activeTab === 'partners') && (
-          <div className="luxury-glass-card p-4 mb-4">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div className="luxury-glass-card anim-fade-in anim-delay-2" style={{ padding: '24px 28px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <div>
-                <h3 className="kikk-title m-0 fs-5">
-                  <i className="fas fa-id-card text-warning me-2"></i> Verifikasi Kemitraan Penyelenggara (KYC)
+                <h3 className="kikk-title m-0" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>
+                  <i className="fas fa-id-card me-2" style={{ color: '#FFD700' }}></i>Verifikasi Kemitraan Penyelenggara (KYC)
                 </h3>
-                <p className="text-secondary small m-0 mt-1">
-                  Kurasi resmi berkas identitas &amp; rekening bank sebelum akun diaktifkan sebagai Penyelenggara Acara.
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>
+                  Kurasi berkas identitas &amp; rekening bank sebelum akun diaktifkan sebagai Organizer.
                 </p>
               </div>
-
-              {/* Status Filter Badges */}
-              <div className="d-flex gap-1">
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setPartnerStatusFilter(st)}
-                    className={`btn btn-sm py-1 px-3 ${
-                      partnerStatusFilter === st
-                        ? 'btn-warning text-dark fw-bold'
-                        : 'btn-outline-secondary text-secondary'
-                    }`}
-                    style={{ fontSize: '11px', borderRadius: '8px' }}
-                  >
-                    {st === 'ALL'
-                      ? `Semua (${partnerApplications.length})`
-                      : st === 'PENDING'
-                      ? `Menunggu (${partnerApplications.filter((p) => p.status === 'PENDING').length})`
-                      : st === 'APPROVED'
-                      ? 'Disetujui'
-                      : 'Ditolak'}
+                  <button key={st} onClick={() => setPartnerStatusFilter(st)}
+                    style={{ padding: '5px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: `1px solid ${partnerStatusFilter === st ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`, background: partnerStatusFilter === st ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)', color: partnerStatusFilter === st ? '#FFD700' : 'rgba(255,255,255,0.5)' }}>
+                    {st === 'ALL' ? `Semua (${partnerApplications.length})` : st === 'PENDING' ? `Menunggu (${partnerApplications.filter(p => p.status === 'PENDING').length})` : st === 'APPROVED' ? 'Disetujui' : 'Ditolak'}
                   </button>
                 ))}
               </div>
             </div>
 
             {filteredPartners.length === 0 ? (
-              <div className="text-center py-5">
-                <i className="fas fa-clipboard-check text-warning fs-1 mb-3 opacity-50"></i>
-                <h6 className="text-white fw-bold">Tidak Ada Antrean Pengajuan</h6>
-                <p className="text-secondary small mb-0">
-                  {partnerStatusFilter === 'ALL'
-                    ? 'Belum ada pengguna yang mengirimkan formulir kemitraan.'
-                    : `Tidak ada berkas dengan status ${partnerStatusFilter}.`}
-                </p>
+              <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+                <i className="fas fa-clipboard-check" style={{ fontSize: '28px', display: 'block', marginBottom: '10px', opacity: 0.4 }}></i>
+                {partnerStatusFilter === 'ALL' ? 'Belum ada pengajuan kemitraan.' : `Tidak ada berkas dengan status ${partnerStatusFilter}.`}
               </div>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
-                  <thead>
-                    <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
-                      <th className="py-3">ORGANISASI / PEMOHON</th>
-                      <th className="py-3">IDENTITAS (NIK)</th>
-                      <th className="py-3">REKENING PENCAIRAN</th>
-                      <th className="py-3">TANGGAL</th>
-                      <th className="py-3">STATUS</th>
-                      <th className="py-3 text-end">AKSI KURASI</th>
-                    </tr>
-                  </thead>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['ORGANISASI / PEMOHON', 'IDENTITAS (NIK)', 'REKENING', 'TANGGAL', 'STATUS', 'AKSI'].map((h, i) => <th key={i} style={th(h, i === 5 ? 'right' : 'left')}>{h}</th>)}</tr></thead>
                   <tbody>
                     {filteredPartners.map((app) => (
-                      <tr key={app.id} style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
-                        <td className="py-3">
-                          <div>
-                            <div className="fw-bold text-white fs-6">{app.organizationName}</div>
-                            <div className="text-warning small">
-                              <i className="fas fa-user me-1"></i> {app.userName}
-                            </div>
-                            <div className="text-secondary small" style={{ fontSize: '11px' }}>
-                              {app.userEmail} {app.userPhone ? `• ${app.userPhone}` : ''}
-                            </div>
-                            {app.reason && (
-                              <div className="text-secondary fst-italic mt-1" style={{ fontSize: '11px', maxWidth: '300px' }}>
-                                &ldquo;{app.reason}&rdquo;
-                              </div>
-                            )}
-                          </div>
+                      <tr key={app.id}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        style={{ transition: 'background 0.15s' }}
+                      >
+                        <td style={tdBase}>
+                          <div style={{ color: '#fff', fontWeight: 700, fontSize: '13px' }}>{app.organizationName}</div>
+                          <div style={{ color: '#FFD700', fontSize: '11px' }}><i className="fas fa-user me-1"></i>{app.userName}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{app.userEmail}{app.userPhone ? ` · ${app.userPhone}` : ''}</div>
+                          {app.reason && <div style={{ color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', fontSize: '11px', maxWidth: '260px', marginTop: '4px' }}>&ldquo;{app.reason}&rdquo;</div>}
                         </td>
-                        <td>
-                          <div>
-                            <div className="font-monospace text-white small fw-bold">{app.idCardNumber}</div>
-                            {app.idCardImage ? (
-                              <button
-                                onClick={() => handlePreviewKtp(app.idCardImage, app.organizationName)}
-                                className="btn btn-sm btn-outline-warning py-0 px-2 mt-1"
-                                style={{ fontSize: '10px', borderRadius: '6px' }}
-                              >
-                                <i className="fas fa-image me-1"></i> Lihat Foto KTP
-                              </button>
-                            ) : (
-                              <span className="text-secondary small">Tanpa Foto</span>
-                            )}
-                          </div>
+                        <td style={tdBase}>
+                          <div style={{ color: '#fff', fontWeight: 700, fontSize: '12px', fontFamily: 'monospace' }}>{app.idCardNumber}</div>
+                          {app.idCardImage ? (
+                            <button onClick={() => handlePreviewKtp(app.idCardImage, app.organizationName)} style={{ marginTop: '4px', padding: '3px 10px', borderRadius: '7px', border: '1px solid rgba(255,215,0,0.3)', background: 'rgba(255,215,0,0.06)', color: '#FFD700', fontSize: '10px', cursor: 'pointer' }}>
+                              <i className="fas fa-image me-1"></i>Lihat KTP
+                            </button>
+                          ) : <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Tanpa Foto</span>}
                         </td>
-                        <td>
-                          <div>
-                            <span className="badge bg-secondary text-white mb-1" style={{ fontSize: '10px' }}>
-                              {app.bankName}
-                            </span>
-                            <div className="font-monospace text-white small">{app.bankAccountNumber}</div>
-                            <div className="text-secondary" style={{ fontSize: '11px' }}>
-                              a.n {app.bankAccountHolder}
-                            </div>
-                          </div>
+                        <td style={tdBase}>
+                          <span style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '6px', padding: '2px 8px', fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px', display: 'inline-block' }}>{app.bankName}</span>
+                          <div style={{ color: '#fff', fontFamily: 'monospace', fontSize: '12px' }}>{app.bankAccountNumber}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>a.n {app.bankAccountHolder}</div>
                         </td>
-                        <td className="text-secondary small">
+                        <td style={{ ...tdBase, color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>
                           <div>{app.createdAt ? app.createdAt.substring(0, 10) : '-'}</div>
-                          <div style={{ fontSize: '10px', opacity: 0.6 }}>
-                            {app.createdAt ? app.createdAt.substring(11, 16) : ''}
-                          </div>
+                          <div style={{ fontSize: '10px', opacity: 0.6 }}>{app.createdAt ? app.createdAt.substring(11, 16) : ''}</div>
                         </td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              app.status === 'APPROVED'
-                                ? 'bg-success text-white'
-                                : app.status === 'PENDING'
-                                ? 'bg-warning text-dark'
-                                : 'bg-danger text-white'
-                            }`}
-                            style={{ padding: '5px 10px', borderRadius: '6px', fontSize: '10px', letterSpacing: '0.5px' }}
-                          >
+                        <td style={tdBase}>
+                          <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: 700, background: app.status === 'APPROVED' ? 'rgba(34,197,94,0.15)' : app.status === 'PENDING' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.12)', border: `1px solid ${app.status === 'APPROVED' ? 'rgba(34,197,94,0.3)' : app.status === 'PENDING' ? 'rgba(234,179,8,0.3)' : 'rgba(239,68,68,0.3)'}`, color: app.status === 'APPROVED' ? '#4ade80' : app.status === 'PENDING' ? '#fbbf24' : '#f87171' }}>
                             {app.status === 'APPROVED' ? 'DISETUJUI' : app.status === 'PENDING' ? 'MENUNGGU' : 'DITOLAK'}
                           </span>
-                          {app.adminNotes && (
-                            <div className="text-danger small mt-1" style={{ fontSize: '10px', maxWidth: '180px' }}>
-                              Note: {app.adminNotes}
-                            </div>
-                          )}
+                          {app.adminNotes && <div style={{ color: '#f87171', fontSize: '10px', marginTop: '4px', maxWidth: '160px' }}>Note: {app.adminNotes}</div>}
                         </td>
-                        <td className="text-end py-3">
+                        <td style={{ ...tdBase, textAlign: 'right' }}>
                           {app.status === 'PENDING' ? (
-                            <div className="d-flex justify-content-end gap-2">
-                              <button
-                                onClick={() => handleApprovePartner(app)}
-                                className="btn btn-sm btn-success py-1 px-3 fw-bold"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Setujui dan promosikan akun ke ORGANIZER"
-                              >
-                                <i className="fas fa-check me-1"></i> Setujui
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                              <button onClick={() => handleApprovePartner(app)} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                                <i className="fas fa-check me-1"></i>Setujui
                               </button>
-                              <button
-                                onClick={() => handleRejectPartner(app)}
-                                className="btn btn-sm btn-outline-danger py-1 px-2"
-                                style={{ fontSize: '11px', borderRadius: '6px' }}
-                                title="Tolak pengajuan dengan catatan"
-                              >
-                                <i className="fas fa-times me-1"></i> Tolak
+                              <button onClick={() => handleRejectPartner(app)} style={{ padding: '6px 12px', borderRadius: '9px', border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.06)', color: '#f87171', fontSize: '11px', cursor: 'pointer' }}>
+                                <i className="fas fa-times me-1"></i>Tolak
                               </button>
                             </div>
                           ) : (
-                            <span className="text-secondary small fst-italic">
-                              {app.status === 'APPROVED' ? (
-                                <span className="text-success small">
-                                  <i className="fas fa-check-double me-1"></i> Aktif sebagai Organizer
-                                </span>
-                              ) : (
-                                <span className="text-danger small">
-                                  <i className="fas fa-ban me-1"></i> Ditolak
-                                </span>
-                              )}
+                            <span style={{ fontSize: '11px', color: app.status === 'APPROVED' ? '#4ade80' : '#f87171', fontStyle: 'italic' }}>
+                              <i className={`fas ${app.status === 'APPROVED' ? 'fa-check-double' : 'fa-ban'} me-1`}></i>
+                              {app.status === 'APPROVED' ? 'Aktif sbg Organizer' : 'Ditolak'}
                             </span>
                           )}
                         </td>
@@ -1089,107 +596,71 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: MANAJEMEN KATEGORI RESMI (Eksklusif Super Admin) */}
+        {/* ── KATEGORI ─────────────────────────────────────────────────────── */}
         {(activeTab === 'overview' || activeTab === 'categories') && (
-          <div className="luxury-glass-card p-4 mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="luxury-glass-card anim-fade-in anim-delay-3" style={{ padding: '24px 28px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
               <div>
-                <h3 className="kikk-title m-0 fs-5">
-                  <i className="fas fa-layer-group text-warning me-2"></i> Regulasi Kategori Acara Resmi
+                <h3 className="kikk-title m-0" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>
+                  <i className="fas fa-layer-group me-2" style={{ color: '#FFD700' }}></i>Regulasi Kategori Acara
                 </h3>
-                <p className="text-secondary small m-0 mt-1">
-                  Kategori resmi yang dapat dipilih oleh organizer saat membuat acara di platform.
-                </p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>Kategori yang dapat dipilih organizer saat membuat acara.</p>
               </div>
-              <button
-                onClick={() => setShowAddCatModal(true)}
-                className="btn-kikk btn-sm py-1 px-3"
-                style={{ fontSize: '12px' }}
-              >
-                <i className="fas fa-plus me-1"></i> Tambah Kategori
+              <button onClick={() => setShowAddCatModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #FFD700, #d4a800)', color: '#0b0616', fontWeight: 700, fontSize: '12px' }}>
+                <i className="fas fa-plus"></i> Tambah Kategori
               </button>
             </div>
-
-            <div className="row g-3">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
               {categories.map((c) => (
-                <div className="col-12 col-sm-6 col-md-4" key={c.id}>
-                  <div
-                    className="p-3 rounded-3 d-flex align-items-center justify-content-between"
-                    style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 215, 0, 0.15)' }}
-                  >
-                    <div>
-                      <div className="text-white fw-bold">{c.name}</div>
-                      <div className="text-secondary small">{c.description || 'Kategori resmi Eventease'}</div>
-                    </div>
-                    <span className="badge bg-warning text-dark">AKTIF</span>
+                <div key={c.id} style={{ padding: '14px 16px', borderRadius: '14px', background: 'rgba(255,215,0,0.04)', border: '1px solid rgba(255,215,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                  <div>
+                    <div style={{ color: '#fff', fontWeight: 700, fontSize: '13px', marginBottom: '2px' }}>{c.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{c.description || 'Kategori resmi Eventease'}</div>
                   </div>
+                  <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', borderRadius: '8px', padding: '2px 10px', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>AKTIF</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* TAB 3: AUDIT SELURUH ACARA PLATFORM */}
+        {/* ── AUDIT ACARA ────────────────────────────────────────────────────── */}
         {(activeTab === 'overview' || activeTab === 'events') && (
-          <div className="luxury-glass-card p-4">
-            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
-              <div>
-                <h3 className="kikk-title m-0 fs-5">
-                  <i className="fas fa-server text-warning me-2"></i> Audit Seluruh Acara Platform ({events.length})
-                </h3>
-                <p className="text-secondary small m-0 mt-1">
-                  Pantau seluruh acara yang diterbitkan oleh seluruh penyelenggara di platform.
-                </p>
-              </div>
-            </div>
-
-            <div className="table-responsive">
-              <table className="table table-dark table-hover m-0 align-middle" style={{ background: 'transparent' }}>
-                <thead>
-                  <tr style={{ borderColor: 'rgba(255, 215, 0, 0.2)', fontSize: '11px', letterSpacing: '1px' }}>
-                    <th className="py-2">NAMA ACARA</th>
-                    <th className="py-2">KATEGORI</th>
-                    <th className="py-2">PENYELENGGARA</th>
-                    <th className="py-2">JADWAL</th>
-                    <th className="py-2 text-end">AKSI AUDIT</th>
-                  </tr>
-                </thead>
+          <div className="luxury-glass-card anim-fade-in anim-delay-3" style={{ padding: '24px 28px' }}>
+            <h3 className="kikk-title m-0" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>
+              <i className="fas fa-server me-2" style={{ color: '#FFD700' }}></i>Audit Seluruh Acara Platform
+              <span style={{ marginLeft: '10px', background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', borderRadius: '8px', padding: '2px 10px', fontSize: '11px', fontWeight: 700, verticalAlign: 'middle' }}>{events.length}</span>
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '4px 0 16px' }}>Pantau seluruh acara yang diterbitkan oleh penyelenggara di platform.</p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr>{['NAMA ACARA', 'KATEGORI', 'PENYELENGGARA', 'JADWAL', 'AKSI AUDIT'].map((h, i) => <th key={i} style={th(h, i === 4 ? 'right' : 'left')}>{h}</th>)}</tr></thead>
                 <tbody>
                   {events.map((e) => (
-                    <tr key={e.id} style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-                      <td className="fw-semibold text-white py-2">
-                        <div className="d-flex align-items-center gap-2">
-                          <img
-                            src={e.imageUrl || '/images/kikk_hero_stage.jpg'}
-                            alt={e.name}
-                            className="rounded"
-                            style={{ width: '34px', height: '34px', objectFit: 'cover' }}
-                          />
-                          <span>{e.name}</span>
+                    <tr key={e.id}
+                      onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                      onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}
+                      style={{ transition: 'background 0.15s' }}
+                    >
+                      <td style={tdBase}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img src={e.imageUrl || '/images/kikk_hero_stage.jpg'} alt={e.name} style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '10px', border: '1px solid rgba(255,215,0,0.2)', flexShrink: 0 }} />
+                          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{e.name}</span>
                         </div>
                       </td>
-                      <td>
-                        <span className="badge" style={{ background: 'rgba(255, 215, 0, 0.12)', color: 'var(--kikk-yellow)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+                      <td style={tdBase}>
+                        <span style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.25)', color: '#FFD700', borderRadius: '6px', padding: '2px 10px', fontSize: '10px', fontWeight: 600 }}>
                           {e.categoryName || 'General'}
                         </span>
                       </td>
-                      <td className="text-warning small">{e.organizerName || 'Eventease Official'}</td>
-                      <td className="text-secondary small">{e.date}</td>
-                      <td className="text-end py-2">
-                        <div className="d-flex justify-content-end gap-2">
-                          <button
-                            onClick={() => handleExportExcel(e.id, e.name)}
-                            className="btn-kikk-outline btn-sm py-1 px-2"
-                            style={{ fontSize: '11px', borderColor: '#22c55e', color: '#22c55e', borderRadius: '6px' }}
-                            title="Unduh laporan penjualan acara ini"
-                          >
-                            <i className="fas fa-file-excel me-1"></i> Excel
+                      <td style={{ ...tdBase, color: '#FFD700', fontSize: '12px' }}>{e.organizerName || 'Eventease Official'}</td>
+                      <td style={{ ...tdBase, color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{e.date}</td>
+                      <td style={{ ...tdBase, textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                          <button onClick={() => handleExportExcel(e.id, e.name)} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(74,222,128,0.25)', background: 'rgba(34,197,94,0.05)', color: '#4ade80', fontSize: '11px', cursor: 'pointer' }}>
+                            <i className="fas fa-file-excel me-1"></i>Excel
                           </button>
-                          <Link
-                            to={`/events/${e.id}`}
-                            className="btn-kikk btn-sm py-1 px-3"
-                            style={{ fontSize: '11px', borderRadius: '6px' }}
-                          >
+                          <Link to={`/events/${e.id}`} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.25)', background: 'rgba(255,215,0,0.06)', color: '#FFD700', fontSize: '11px', textDecoration: 'none' }}>
                             Lihat
                           </Link>
                         </div>
@@ -1203,78 +674,35 @@ export const AdminDashboardPage: React.FC = () => {
         )}
       </main>
 
-      {/* Modal Tambah Kategori Resmi Baru (Super Admin Only) */}
+      {/* ── MODAL TAMBAH KATEGORI ────────────────────────────────────────────── */}
       {showAddCatModal && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
-          style={{ background: 'rgba(5, 2, 12, 0.85)', backdropFilter: 'blur(12px)', zIndex: 1060 }}
-        >
-          <div
-            className="luxury-glass-card p-4 p-md-5 w-100 anim-fade-in"
-            style={{
-              maxWidth: '520px',
-              border: '1px solid rgba(255, 215, 0, 0.3)',
-            }}
-          >
-            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style={{ borderColor: 'rgba(255, 215, 0, 0.15)' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1060, background: 'rgba(5,2,14,0.85)', backdropFilter: 'blur(14px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={(e) => { if (e.target === e.currentTarget) setShowAddCatModal(false); }}>
+          <div className="anim-fade-in" style={{ width: '100%', maxWidth: '500px', background: 'rgba(12,7,26,0.97)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '24px', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', padding: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,215,0,0.12)' }}>
               <div>
-                <span className="gold-glow-badge" style={{ fontSize: '10px' }}>
-                  <i className="fas fa-layer-group text-warning me-1"></i> REGULASI PLATFORM
+                <span style={{ display: 'inline-block', padding: '3px 12px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.25)', color: '#FFD700', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  <i className="fas fa-layer-group me-1" style={{ fontSize: '9px' }}></i> Regulasi Platform
                 </span>
-                <h3 className="kikk-title m-0 mt-1" style={{ fontSize: '1.6rem' }}>
-                  Tambah Kategori Baru
-                </h3>
+                <h3 style={{ margin: 0, color: '#fff', fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700 }}>Tambah Kategori Baru</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAddCatModal(false)}
-                className="btn-close btn-close-white shadow-none"
-                aria-label="Tutup"
-              ></button>
+              <button onClick={() => setShowAddCatModal(false)} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <i className="fas fa-times" style={{ fontSize: '13px' }}></i>
+              </button>
             </div>
-
             <form onSubmit={handleCreateCategorySubmit}>
-              <div className="mb-3">
-                <label className="form-label text-warning small fw-bold">NAMA KATEGORI *</label>
-                <input
-                  type="text"
-                  required
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  placeholder="Contoh: E-Sport & Gaming, Workshop, Teater"
-                  className="form-control bg-dark text-white border-secondary"
-                  style={{ borderRadius: '10px', padding: '10px 14px' }}
-                />
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, marginBottom: '6px', letterSpacing: '0.5px' }}>NAMA KATEGORI <span style={{ color: '#FFD700' }}>*</span></label>
+                <input type="text" required value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Contoh: E-Sport & Gaming, Workshop, Teater" style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
-
-              <div className="mb-4">
-                <label className="form-label text-warning small fw-bold">DESKRIPSI KATEGORI</label>
-                <textarea
-                  rows={3}
-                  value={catDesc}
-                  onChange={(e) => setCatDesc(e.target.value)}
-                  placeholder="Jelaskan cakupan acara untuk kategori ini..."
-                  className="form-control bg-dark text-white border-secondary"
-                  style={{ borderRadius: '10px', padding: '10px 14px' }}
-                ></textarea>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>DESKRIPSI KATEGORI</label>
+                <textarea rows={3} value={catDesc} onChange={(e) => setCatDesc(e.target.value)} placeholder="Jelaskan cakupan acara untuk kategori ini..." style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
               </div>
-
-              <div className="d-flex justify-content-end gap-2 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowAddCatModal(false)}
-                  className="btn-kikk-outline btn-sm px-4 py-2"
-                  style={{ borderRadius: '10px' }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingCat}
-                  className="btn-kikk btn-sm px-4 py-2"
-                  style={{ borderRadius: '10px' }}
-                >
-                  <i className={`fas ${isSubmittingCat ? 'fa-spinner fa-spin' : 'fa-check'} me-1`}></i> Simpan Kategori
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button type="button" onClick={() => setShowAddCatModal(false)} style={{ padding: '10px 22px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}>Batal</button>
+                <button type="submit" disabled={isSubmittingCat} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 26px', borderRadius: '12px', border: 'none', cursor: isSubmittingCat ? 'not-allowed' : 'pointer', background: isSubmittingCat ? 'rgba(255,215,0,0.4)' : 'linear-gradient(135deg, #FFD700 0%, #d4a800 100%)', color: '#0b0616', fontWeight: 700, fontSize: '13px' }}>
+                  <i className={`fas ${isSubmittingCat ? 'fa-spinner fa-spin' : 'fa-check'}`}></i>
+                  {isSubmittingCat ? 'Menyimpan...' : 'Simpan Kategori'}
                 </button>
               </div>
             </form>
