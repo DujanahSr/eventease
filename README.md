@@ -115,9 +115,14 @@ graph TD
 - Webhook listener `/api/bookings/midtrans/callback` dengan verifikasi signature hash SHA-512 untuk memvalidasi notifikasi status pembayaran dari server Midtrans secara aman.
 
 ### 6. Arsitektur Otentikasi & Keamanan Berlapis (Spring Security 6)
-- **Stateless JWT**: Access Token berumur 15 menit dan Refresh Token berumur 7 hari.
+- **Stateless JWT**: Access Token berumur 15 menit dan Refresh Token berumur 7 hari dengan mekanisme *Silent Token Refresh*.
 - **Token Blacklist**: Penyimpanan token yang telah logout di Redis in-memory hingga masa berlaku aslinya berakhir untuk mencegah *replay attack*.
 - **Validasi Registrasi Mendalam**: Formulir pendaftaran dilengkapi kolom Konfirmasi Password dan deteksi error validasi visual per kolom secara presisi.
+
+### 7. Alur Kurasi Kemitraan B2B & Verifikasi KYC (Model B - Curated Enterprise)
+- **Mitigasi Penipuan Acara**: Seluruh pendaftaran umum (baik form pendaftaran maupun Google Sign-In) secara default hanya menghasilkan akun `ROLE_USER`. Pendaftaran bebas sebagai penyelenggara ditiadakan demi keamanan platform.
+- **Pengajuan Kemitraan**: Pengguna yang ingin menjadi Penyelenggara wajib mengajukan formulir KYC melalui dasbor profil, mengunggah kartu identitas/KTP resmi (tersimpan aman di Cloudinary CDN), memasukkan NIK, detail badan usaha/komunitas, dan informasi rekening bank pencairan.
+- **Panel Audit Super Admin**: Dokumen ditinjau secara teliti oleh Super Admin melalui dasbor admin. Hak akses `ROLE_ORGANIZER` baru diberikan setelah disetujui, dengan jaminan isolasi data penuh atas acara yang diselenggarakannya.
 
 ---
 
@@ -129,11 +134,13 @@ Aplikasi menyediakan dokumentasi OpenAPI interaktif yang dapat diuji langsung da
 
 | Modul | Method | Endpoint | Hak Akses | Deskripsi |
 |---|---|---|---|---|
-| **Auth** | `POST` | `/api/auth/register` | Publik | Registrasi akun baru (USER / ORGANIZER) |
+| **Auth** | `POST` | `/api/auth/register` | Publik | Registrasi akun baru (Khusus USER; hak akses ORGANIZER diperoleh via verifikasi KYC) |
 | **Auth** | `POST` | `/api/auth/login` | Publik | Autentikasi dan penerbitan pasangan JWT token |
 | **Auth** | `POST` | `/api/auth/refresh` | Publik | Rotasi access token baru via refresh token |
 | **Auth** | `POST` | `/api/auth/logout` | Authenticated | Logout dan memasukkan access token ke Redis blacklist |
 | **Auth** | `GET` | `/api/auth/me` | Authenticated | Mengambil profil pengguna yang sedang login |
+| **KYC** | `POST` | `/api/partner-applications/apply` | USER | Pengajuan permohonan kemitraan Organizer (Upload KTP, NIK, Bank) |
+| **KYC** | `GET` | `/api/partner-applications/my` | USER | Memeriksa status pengajuan verifikasi kemitraan terkini |
 | **Events** | `GET` | `/api/events` | Publik | Katalog acara dengan filter kategori, pencarian, dan pagination |
 | **Events** | `GET` | `/api/events/{id}` | Publik | Detail lengkap satu acara dan tier tiket yang tersedia |
 | **Events** | `POST` | `/api/events` | ORGANIZER, ADMIN | Publikasi acara baru dan alokasi kuota tiket |
@@ -151,6 +158,9 @@ Aplikasi menyediakan dokumentasi OpenAPI interaktif yang dapat diuji langsung da
 | **Wallet** | `GET` | `/api/wallet/balance` | ORGANIZER | Informasi saldo dompet hasil penjualan tiket |
 | **Wallet** | `POST` | `/api/wallet/withdraw` | ORGANIZER | Pengajuan penarikan dana ke rekening bank |
 | **Admin** | `GET` | `/api/admin/users` | ADMIN | Manajemen seluruh pengguna dan perubahan role |
+| **Admin** | `GET` | `/api/admin/partner-applications` | ADMIN | Daftar seluruh pengajuan verifikasi kemitraan KYC |
+| **Admin** | `POST` | `/api/admin/partner-applications/{id}/approve` | ADMIN | Persetujuan kemitraan & promosi akun menjadi ORGANIZER |
+| **Admin** | `POST` | `/api/admin/partner-applications/{id}/reject` | ADMIN | Penolakan permohonan kemitraan dengan catatan evaluasi |
 | **Admin** | `POST` | `/api/admin/withdrawals/{id}/approve` | ADMIN | Persetujuan transfer penarikan dana organizer |
 
 ---
@@ -162,8 +172,11 @@ Aplikasi menyediakan dokumentasi OpenAPI interaktif yang dapat diuji langsung da
 Seluruh 6 kontainer (Nginx, React Frontend, Spring Boot Backend, PostgreSQL 16, Redis 7, RabbitMQ 3) dikonfigurasi siap jalan dengan **satu perintah**:
 
 ```bash
-# Build dan jalankan seluruh 6 container di background
+# Mode pengujian kontainer lokal (dengan RabbitMQ & Mock services):
 docker compose up -d --build
+
+# Mode produksi / VPS deployment (docker-compose.prod.yml):
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 Setelah kontainer aktif, akses layanan berikut:
